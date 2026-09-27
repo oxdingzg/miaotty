@@ -1,5 +1,5 @@
 # macOS
 .DS_Store
 
-# 本地私有资料(逆向调研、方案取舍、未公开内容)—— 不提交
-docs/
+# docs/ 本身会公开,只有 private/ 子目录不提交
+docs/private/
