@@ -16,6 +16,10 @@ Scaffold + **working Ghostty fork build**.
 - The **badge spine runs inside the app** (`docs/ADR/0005-app-integration.md`):
   `miaotty-cli pane list` returns live panes + child PIDs, and `state set` drives
   an on-pane agent badge (processing / awaiting / error / idle).
+- **Pane identity & env binding** (`docs/ADR/0006-identity-and-env-binding.md`):
+  the core generates a pane id and injects `MIAOTTY_PANE_ID` at spawn; the CLI
+  defaults `--pane` from it; the app announces `TERM_PROGRAM=miaotty` and
+  installs agent hooks under `~/.local/share/miaotty/` on launch.
 - The **integration spine** is implemented and verified end-to-end:
   - **MTP** (Miaotty Terminal Protocol) — one versioned, capability-negotiated contract for the
     state / context / control / UI planes. Single JSON-Schema source, codegen for Rust, Swift, TS.

@@ -10,17 +10,13 @@ upstream files ad hoc.
 | Patch | Why |
 |-------|-----|
 | [`patches/0001-xcode26-libtool-ranlib.patch`](./patches/0001-xcode26-libtool-ranlib.patch) | Zig 0.15.2 emits `ar` archives whose index Apple `libtool` (cctools_ld on Xcode 26) silently drops members from while merging — including the whole Zig core and C++ deps (imgui, oniguruma). Result: the macOS app fails to link with undefined `ghostty_*` / C++ symbols. The patch runs `ranlib` over every libtool input first, which rewrites the index so libtool keeps all members. |
-| [`patches/0002-miaotty-app-integration.patch`](./patches/0002-miaotty-app-integration.patch) | Wires the integration spine into the app: (1) `ghostty_surface_child_pid` C API — a per-surface atomic PID published by `termio.Exec`; (2) 3-line hooks in `SurfaceView` (attach) + `AppDelegate` (start host); (3) local SPM package `MiaottyKit` added to `Ghostty.xcodeproj`; (4) `xcodebuild` uses `-scheme Ghostty` (with `SYMROOT/OBJROOT=build`) because `-target` builds SPM products but does not propagate their `.swiftmodule` to the app. |
+| [`patches/0002-miaotty-app-integration.patch`](./patches/0002-miaotty-app-integration.patch) | Wires the integration spine into the app: (1) `ghostty_surface_child_pid` + `ghostty_surface_pane_id` C API — a per-surface atomic PID and a core-generated pane id; (2) per-pane `MIAOTTY_PANE_ID` env injection at spawn; (3) `TERM_PROGRAM=miaotty`; (4) 3-line hooks in `SurfaceView` (attach) + `AppDelegate` (start host); (5) local SPM package `MiaottyKit` in `Ghostty.xcodeproj`; (6) `xcodebuild -scheme Ghostty` with `SYMROOT/OBJROOT=build` (`-target` builds SPM products but does not propagate their `.swiftmodule`); (7) `CFBundleDisplayName = miaotty`. |
 
-New (non-patch) source files live under [`macos/Sources/Miaotty/`](./macos/Sources/Miaotty/) and are copied into the checkout by `scripts/bootstrap-ghostty.sh`. The app target uses a `fileSystemSynchronizedGroups` `Sources/` group, so new files need no pbxproj entries.
+New (non-patch) source files live under [`macos/Sources/Miaotty/`](./macos/Sources/Miaotty/) and are copied into the checkout by `scripts/bootstrap-ghostty.sh`. The app target uses a `fileSystemSynchronizedGroups` `Sources/` group, so new files need no pbxproj entries. The same glue **installs the agent hook scripts + shell env** to `~/.local/share/miaotty/{agent-integration,shell-integration}` on launch (idempotent), so they ship without touching Ghostty's resource pipeline.
 
-## Planned (not yet applied)
+## Deferred (by decision, not missing)
 
-Designed but still upstream-side work:
-
-1. **Per-pane env injection** — set `MIAOTTY_PANE_ID` in `termio.Exec` at spawn so agents bind in O(1) without a PID walk.
-2. **Bundle metadata** — rename app name / bundle id / URL schemes / `TERM_PROGRAM`.
-3. **Resources** — bundle `miaotty/resources/**` (shell + agent integration, terminfo).
+- **Bundle identity rename** (`PRODUCT_BUNDLE_IDENTIFIER`, product/app-bundle name, URL schemes): the user-visible name is now `miaotty` and `TERM_PROGRAM=miaotty`, but the bundle id and `Ghostty.app` product name are intentionally kept until the distribution decision (signing / notarization / Sparkle feed / tests). See `docs/ADR/0006-identity-and-env-binding.md`.
 
 ## Build toolchain quirks (Xcode 26 / macOS 26)
 

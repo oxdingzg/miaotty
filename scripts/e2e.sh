@@ -26,6 +26,11 @@ out="$("$CLI" --socket "$SOCK" state:miao --state processing --pane pane_3)"
 out="$("$CLI" --socket "$SOCK" state list)";      check "state list" 'pane_3' "$out"
 out="$("$CLI" --socket "$SOCK" state:miao --state idle --pane pane_3)"
                                                   check "state lww" '"revision": 2' "$out"
-out="$("$CLI" --socket "$SOCK" state list)";      check "state lww value" '"state": "idle"' "$out"
+out="$("$CLI" --socket "$SOCK" state list)";        check "state lww value" '"state": "idle"' "$out"
+
+# Pane binding defaults from MIAOTTY_PANE_ID (no --pane), as agent hooks rely on.
+out="$(MIAOTTY_PANE_ID=envpane "$CLI" --socket "$SOCK" state:miao --state processing)"
+                                                  check "env pane default" '"revision"' "$out"
+out="$("$CLI" --socket "$SOCK" state list)";        check "env pane bound" 'envpane' "$out"
 
 [ "$fail" -eq 0 ] && echo "e2e OK" || { echo "e2e FAILED"; exit 1; }

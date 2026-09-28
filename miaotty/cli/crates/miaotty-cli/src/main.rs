@@ -143,7 +143,8 @@ fn main() -> Result<()> {
             let params = AgentStateSetParams {
                 agent: args.agent,
                 session_id: args.session,
-                pane_id: args.pane,
+                // Default to the pane we run in, so hooks need no arguments.
+                pane_id: args.pane.or_else(|| std::env::var("MIAOTTY_PANE_ID").ok()),
                 tty: args.tty,
                 agent_pid: args.agent_pid,
                 state: parse_state(&args.state)?,
@@ -155,9 +156,7 @@ fn main() -> Result<()> {
             };
             c.call("agent", "state.set", serde_json::to_value(params)?)?
         }
-        Cmd::Pane {
-            sub: PaneCmd::List,
-        } => c.call("pane", "list", serde_json::json!({}))?,
+        Cmd::Pane { sub: PaneCmd::List } => c.call("pane", "list", serde_json::json!({}))?,
         Cmd::MockHost => unreachable!(),
     };
 

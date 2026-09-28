@@ -1,18 +1,20 @@
 diff --git a/include/ghostty.h b/include/ghostty.h
-index 40ff55c..9d755f3 100644
+index 40ff55c..3545ab2 100644
 --- a/include/ghostty.h
 +++ b/include/ghostty.h
-@@ -1080,6 +1080,8 @@ ghostty_surface_config_s ghostty_surface_inherited_config(ghostty_surface_t, gho
+@@ -1080,6 +1080,10 @@ ghostty_surface_config_s ghostty_surface_inherited_config(ghostty_surface_t, gho
  void ghostty_surface_update_config(ghostty_surface_t, ghostty_config_t);
  bool ghostty_surface_needs_confirm_quit(ghostty_surface_t);
  bool ghostty_surface_process_exited(ghostty_surface_t);
 +// miaotty: PID of the shell process in this surface (0 if not spawned yet).
 +int32_t ghostty_surface_child_pid(ghostty_surface_t);
++// miaotty: stable pane id for this surface (NUL-terminated, 32 hex chars).
++const char* ghostty_surface_pane_id(ghostty_surface_t);
  void ghostty_surface_refresh(ghostty_surface_t);
  void ghostty_surface_draw(ghostty_surface_t);
  void ghostty_surface_set_content_scale(ghostty_surface_t, double, double);
 diff --git a/macos/Ghostty.xcodeproj/project.pbxproj b/macos/Ghostty.xcodeproj/project.pbxproj
-index 3758c32..6357ac3 100644
+index 3758c32..8d78a25 100644
 --- a/macos/Ghostty.xcodeproj/project.pbxproj
 +++ b/macos/Ghostty.xcodeproj/project.pbxproj
 @@ -15,6 +15,7 @@
@@ -47,6 +49,51 @@ index 3758c32..6357ac3 100644
  			);
  			productRefGroup = A5B30532299BEAAA0047F10C /* Products */;
  			projectDirPath = "";
+@@ -750,7 +754,7 @@
+ 				GCC_OPTIMIZATION_LEVEL = fast;
+ 				GENERATE_INFOPLIST_FILE = YES;
+ 				INFOPLIST_FILE = "Ghostty-Info.plist";
+-				INFOPLIST_KEY_CFBundleDisplayName = Ghostty;
++				INFOPLIST_KEY_CFBundleDisplayName = miaotty;
+ 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+ 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "A program running within Ghostty would like to use AppleScript.";
+ 				INFOPLIST_KEY_NSAudioCaptureUsageDescription = "A program running within Ghostty would like to access your system's audio.";
+@@ -1203,7 +1207,7 @@
+ 				GCC_OPTIMIZATION_LEVEL = fast;
+ 				GENERATE_INFOPLIST_FILE = YES;
+ 				INFOPLIST_FILE = "Ghostty-Info.plist";
+-				INFOPLIST_KEY_CFBundleDisplayName = Ghostty;
++				INFOPLIST_KEY_CFBundleDisplayName = miaotty;
+ 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+ 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "A program running within Ghostty would like to use AppleScript.";
+ 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "A program running within Ghostty would like to use Bluetooth.";
+@@ -1251,7 +1255,7 @@
+ 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+ 				GCC_C_LANGUAGE_STANDARD = gnu17;
+ 				GENERATE_INFOPLIST_FILE = YES;
+-				INFOPLIST_KEY_CFBundleDisplayName = Ghostty;
++				INFOPLIST_KEY_CFBundleDisplayName = miaotty;
+ 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+ 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+ 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+@@ -1290,7 +1294,7 @@
+ 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+ 				GCC_C_LANGUAGE_STANDARD = gnu17;
+ 				GENERATE_INFOPLIST_FILE = YES;
+-				INFOPLIST_KEY_CFBundleDisplayName = Ghostty;
++				INFOPLIST_KEY_CFBundleDisplayName = miaotty;
+ 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+ 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+ 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+@@ -1329,7 +1333,7 @@
+ 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+ 				GCC_C_LANGUAGE_STANDARD = gnu17;
+ 				GENERATE_INFOPLIST_FILE = YES;
+-				INFOPLIST_KEY_CFBundleDisplayName = Ghostty;
++				INFOPLIST_KEY_CFBundleDisplayName = miaotty;
+ 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+ 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+ 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 @@ -1419,6 +1423,13 @@
  		};
  /* End XCConfigurationList section */
@@ -112,10 +159,10 @@ index 3129acf..9e71bb2 100644
              let center = NotificationCenter.default
              center.removeObserver(self)
 diff --git a/src/Surface.zig b/src/Surface.zig
-index 4d66622..82d70e0 100644
+index 4d66622..5a5a93b 100644
 --- a/src/Surface.zig
 +++ b/src/Surface.zig
-@@ -141,6 +141,11 @@ config_conditional_state: configpkg.ConditionalState,
+@@ -141,6 +141,14 @@ config_conditional_state: configpkg.ConditionalState,
  /// This is used to determine if we need to confirm, hold open, etc.
  child_exited: bool = false,
  
@@ -124,10 +171,51 @@ index 4d66622..82d70e0 100644
 +/// `ghostty_surface_child_pid`. 0 means "not spawned yet".
 +child_pid: std.atomic.Value(std.posix.pid_t) = std.atomic.Value(std.posix.pid_t).init(0),
 +
++/// miaotty: stable per-surface pane id (32 hex chars, NUL-terminated).
++pane_id: [33]u8 = [_]u8{0} ** 33,
++
  /// We maintain our focus state and assume we're focused by default.
  /// If we're not initially focused then apprts can call focusCallback
  /// to let us know.
-@@ -642,6 +647,7 @@ pub fn init(
+@@ -577,11 +585,26 @@ pub fn init(
+     var io_thread = try termio.Thread.init(alloc);
+     errdefer io_thread.deinit();
+ 
++    // miaotty: a stable per-surface id (32 hex chars, NUL-terminated). It is
++    // exported to the pane's environment as MIAOTTY_PANE_ID so agents can bind
++    // to their pane in O(1) instead of walking the process tree.
++    const pane_id = pane_id: {
++        var uuid: [16]u8 = undefined;
++        std.crypto.random.bytes(&uuid);
++        var buf: [33]u8 = undefined;
++        for (uuid, 0..) |b, i| {
++            _ = std.fmt.bufPrint(buf[i * 2 .. i * 2 + 2], "{x:0>2}", .{b}) catch unreachable;
++        }
++        buf[32] = 0;
++        break :pane_id buf;
++    };
++
+     self.* = .{
+         .alloc = alloc,
+         .app = app,
+         .rt_app = rt_app,
+         .rt_surface = rt_surface,
++        .pane_id = pane_id,
+         .font_grid_key = font_grid_key,
+         .font_size = font_size,
+         .font_size_adjusted = false,
+@@ -631,6 +654,10 @@ pub fn init(
+         // don't leak GHOSTTY_LOG to any subprocesses
+         env.remove("GHOSTTY_LOG");
+ 
++        // miaotty: exact pane binding for agents/hooks.
++        env.put("MIAOTTY_PANE_ID", self.pane_id[0..32]) catch
++            log.warn("error setting MIAOTTY_PANE_ID", .{});
++
+         // Initialize our IO backend
+         var io_exec = try termio.Exec.init(alloc, .{
+             .command = command,
+@@ -642,6 +669,7 @@ pub fn init(
              .working_directory = if (config.@"working-directory") |wd| wd.value() else null,
              .resources_dir = global_state.resources_dir.host(),
              .term = config.term,
@@ -136,10 +224,10 @@ index 4d66622..82d70e0 100644
              .rt_post_fork_info = .init(config),
          });
 diff --git a/src/apprt/embedded.zig b/src/apprt/embedded.zig
-index 0d5a4f8..4883a80 100644
+index 0d5a4f8..ef1b0cf 100644
 --- a/src/apprt/embedded.zig
 +++ b/src/apprt/embedded.zig
-@@ -1598,6 +1598,13 @@ pub const CAPI = struct {
+@@ -1598,6 +1598,20 @@ pub const CAPI = struct {
          return surface.core_surface.child_exited;
      }
  
@@ -148,6 +236,13 @@ index 0d5a4f8..4883a80 100644
 +    /// its pane (see the state plane in docs/private/miaotty-integration-arch.md).
 +    export fn ghostty_surface_child_pid(surface: *Surface) i32 {
 +        return @intCast(surface.core_surface.child_pid.load(.acquire));
++    }
++
++    /// miaotty: returns the stable pane id of this surface (NUL-terminated,
++    /// 32 hex chars). Also injected into the child environment as
++    /// MIAOTTY_PANE_ID.
++    export fn ghostty_surface_pane_id(surface: *Surface) [*:0]const u8 {
++        return @ptrCast(&surface.core_surface.pane_id);
 +    }
 +
      /// Returns true if the surface has a selection.
@@ -178,7 +273,7 @@ index 81af994..7923a3b 100644
  
          // If we have a specific architecture, we need to pass it
 diff --git a/src/termio/Exec.zig b/src/termio/Exec.zig
-index af4df3f..fd45ff1 100644
+index af4df3f..dacddd9 100644
 --- a/src/termio/Exec.zig
 +++ b/src/termio/Exec.zig
 @@ -567,6 +567,11 @@ pub const Config = struct {
@@ -203,6 +298,15 @@ index af4df3f..fd45ff1 100644
      rt_pre_exec_info: Command.RtPreExecInfo,
      rt_post_fork_info: Command.RtPostForkInfo,
  
+@@ -739,7 +747,7 @@ const Subprocess = struct {
+ 
+         // Set environment variables used by some programs (such as neovim) to detect
+         // which terminal emulator and version they're running under.
+-        try env.put("TERM_PROGRAM", "ghostty");
++        try env.put("TERM_PROGRAM", "miaotty");
+         try env.put("TERM_PROGRAM_VERSION", build_config.version_string);
+ 
+         // VTE_VERSION is set by gnome-terminal and other VTE-based terminals.
 @@ -863,6 +871,7 @@ const Subprocess = struct {
  
              .rt_pre_exec_info = cfg.rt_pre_exec_info,

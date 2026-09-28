@@ -50,11 +50,74 @@ final class MiaottyIntegration: PaneSource, @unchecked Sendable {
         } catch {
             NSLog("miaotty: failed to start MTP host: \(error)")
         }
+
+        installAgentResources()
     }
 
-    /// Associate a surface with a fresh pane id and add its badge overlay.
+    /// Install the agent hook scripts + shell env into a stable user dir, so
+    /// they ship with the app without touching Ghostty's resource pipeline.
+    /// Idempotent: only writes when content changes.
+    func installAgentResources() {
+        let fm = FileManager.default
+        let base = fm.homeDirectoryForCurrentUser
+            .appendingPathComponent(".local/share/miaotty", isDirectory: true)
+
+        for agent in ["miao", "claude", "codex", "opencode"] {
+            let dir = base.appendingPathComponent("agent-integration/\(agent)", isDirectory: true)
+            try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+            writeIfChanged(dir.appendingPathComponent("hook.sh"), Self.hookTemplate(agent: agent), mode: 0o755)
+        }
+
+        let shellDir = base.appendingPathComponent("shell-integration", isDirectory: true)
+        try? fm.createDirectory(at: shellDir, withIntermediateDirectories: true)
+        writeIfChanged(shellDir.appendingPathComponent("miaotty-env.sh"), Self.shellEnvTemplate(), mode: 0o644)
+        NSLog("miaotty: agent resources at \(base.path)")
+    }
+
+    private func writeIfChanged(_ url: URL, _ content: String, mode: Int) {
+        let data = Data(content.utf8)
+        if let existing = try? Data(contentsOf: url), existing == data { return }
+        try? data.write(to: url, options: .atomic)
+        try? FileManager.default.setAttributes([.posixPermissions: mode], ofItemAtPath: url.path)
+    }
+
+    private static func hookTemplate(agent: String) -> String {
+        """
+        #!/bin/sh
+        # Auto-installed by miaotty. Reports the agent state to the terminal.
+        # Usage: hook.sh <processing|idle|awaiting|error> [session-id]
+        set -eu
+        state="${1:-}"; [ -n "$state" ] || { echo "usage: $0 <state> [session-id]" >&2; exit 2; }
+        session="${2:-}"
+        exe="${MIAOTTY_CLI:-miaotty-cli}"
+        command -v "$exe" >/dev/null 2>&1 || exit 0
+        # Pane binding comes from MIAOTTY_PANE_ID (injected by the terminal).
+        set -- state:\(agent) --state "$state"
+        [ -n "$session" ] && set -- "$@" --session "$session"
+        "$exe" "$@" >/dev/null 2>&1 || true
+        """
+    }
+
+    private static func shellEnvTemplate() -> String {
+        """
+        # miaotty shell additions — source after the core integration.
+        : "${MIAOTTY_SOCKET:=${TMPDIR:-/tmp}miaotty.sock}"
+        : "${MIAOTTY_PROTO:=1}"
+        export MIAOTTY_SOCKET MIAOTTY_PROTO
+        miaotty() {
+          if command -v miaotty-cli >/dev/null 2>&1; then
+            miaotty-cli --socket "$MIAOTTY_SOCKET" "$@"
+          else
+            echo "miaotty: miaotty-cli not found on PATH" >&2
+            return 127
+          fi
+        }
+        """
+    }
+
+    /// Associate a surface with its core-assigned pane id and add its badge.
     func attach(surface: ghostty_surface_t, to view: NSView) {
-        let paneID = UUID().uuidString
+        let paneID = String(cString: ghostty_surface_pane_id(surface))
         lock.lock()
         paneByView[ObjectIdentifier(view)] = paneID
         surfaceByPane[paneID] = surface
