@@ -133,6 +133,48 @@ final class MiaottyTabsModel: ObservableObject {
         guard let url = workingDirectory(index: index) else { return }
         NSWorkspace.shared.activateFileViewerSelecting([url])
     }
+
+    func duplicate(index: Int, ghostty: Ghostty.App) {
+        _ = TerminalController.newTab(ghostty, from: tabWindow(index: index))
+    }
+
+    func meta(index: Int) -> MiaottyTabMeta? {
+        tabWindow(index: index).map { MiaottyTabMetaStore.shared.meta(for: $0) }
+    }
+
+    func setPrefix(index: Int) {
+        guard let meta = meta(index: index) else { return }
+        let alert = NSAlert()
+        alert.messageText = "Set Tab Prefix"
+        alert.informativeText = "Shown before the tab title, e.g. [GIT]."
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 220, height: 24))
+        field.stringValue = meta.prefix ?? ""
+        field.placeholderString = "[GIT]"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
+        if alert.runModal() == .alertFirstButtonReturn {
+            let value = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            meta.prefix = value.isEmpty ? nil : value
+            refresh()
+        }
+    }
+
+    func setMark(index: Int, mark: MiaottyTabMark) {
+        meta(index: index)?.mark = mark
+        refresh()
+    }
+
+    func clearMark(index: Int) {
+        meta(index: index)?.mark = nil
+        refresh()
+    }
+
+    func toggleDivider(index: Int) {
+        guard let meta = meta(index: index) else { return }
+        meta.dividerAfter.toggle()
+        refresh()
+    }
 }
 
 // MARK: - View
@@ -200,7 +242,12 @@ struct MiaottyTabsPanel: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 1) {
                 ForEach(Array(model.tabs.enumerated()), id: \.element.id) { index, info in
-                    tabRow(index: index, info: info)
+                    VStack(spacing: 1) {
+                        tabRow(index: index, info: info)
+                        if model.meta(index: index)?.dividerAfter == true {
+                            Divider()
+                        }
+                    }
                 }
             }
             .padding(.horizontal, 6)
@@ -208,12 +255,24 @@ struct MiaottyTabsPanel: View {
         }
     }
 
+    private func displayTitle(_ info: MiaottyTabInfo, meta: MiaottyTabMeta?) -> String {
+        let base = info.title.isEmpty ? "Untitled" : info.title
+        if let prefix = meta?.prefix, !prefix.isEmpty { return "\(prefix) \(base)" }
+        return base
+    }
+
     private func tabRow(index: Int, info: MiaottyTabInfo) -> some View {
         Button {
             model.select(index: index)
         } label: {
             HStack(spacing: 8) {
-                Text(info.title.isEmpty ? "Untitled" : info.title)
+                if let mark = model.meta(index: index)?.mark {
+                    Circle()
+                        .fill(Color(nsColor: mark.nsColor))
+                        .frame(width: 7, height: 7)
+                }
+
+                Text(displayTitle(info, meta: model.meta(index: index)))
                     .font(.system(size: 13))
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -241,6 +300,38 @@ struct MiaottyTabsPanel: View {
                 model.rename(index: index)
             } label: {
                 Label("Rename Tab…", systemImage: "pencil.line")
+            }
+
+            Button {
+                model.setPrefix(index: index)
+            } label: {
+                Label("Set Prefix…", systemImage: "textformat")
+            }
+
+            Menu {
+                ForEach(MiaottyTabMark.allCases, id: \.self) { mark in
+                    Button {
+                        model.setMark(index: index, mark: mark)
+                    } label: {
+                        Label(mark.title, systemImage: "circle.fill")
+                    }
+                }
+                Divider()
+                Button {
+                    model.clearMark(index: index)
+                } label: {
+                    Label("Clear Mark", systemImage: "circle")
+                }
+            } label: {
+                Label("Mark Tab", systemImage: "flag")
+            }
+
+            Button {
+                model.toggleDivider(index: index)
+            } label: {
+                Label(
+                    model.meta(index: index)?.dividerAfter == true ? "Remove Divider" : "Insert Divider",
+                    systemImage: "line.horizontal.3")
             }
 
             Divider()
@@ -286,6 +377,12 @@ struct MiaottyTabsPanel: View {
             }
 
             Divider()
+
+            Button {
+                model.duplicate(index: index, ghostty: ghostty)
+            } label: {
+                Label("Duplicate Tab", systemImage: "plus.square.on.square")
+            }
 
             Button {
                 model.moveTabToNewWindow(index: index)
