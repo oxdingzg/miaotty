@@ -86,6 +86,53 @@ final class MiaottyTabsModel: ObservableObject {
     func newTab(ghostty: Ghostty.App) {
         _ = TerminalController.newTab(ghostty, from: window)
     }
+
+    private func tabWindow(index: Int) -> NSWindow? {
+        guard let windows = window?.tabGroup?.windows, windows.indices.contains(index) else {
+            return index == 0 ? window : nil
+        }
+        return windows[index]
+    }
+
+    func controller(index: Int) -> TerminalController? {
+        tabWindow(index: index)?.windowController as? TerminalController
+    }
+
+    func workingDirectory(index: Int) -> URL? {
+        tabWindow(index: index)?.representedURL
+    }
+
+    func rename(index: Int) {
+        controller(index: index)?.promptTabTitle()
+    }
+
+    func closeTab(index: Int) {
+        controller(index: index)?.closeTab(nil)
+    }
+
+    func closeOtherTabs(index: Int) {
+        controller(index: index)?.closeOtherTabs(nil)
+    }
+
+    func closeTabsToTheRight(index: Int) {
+        controller(index: index)?.closeTabsOnTheRight(nil)
+    }
+
+    func moveTabToNewWindow(index: Int) {
+        tabWindow(index: index)?.moveTabToNewWindow(nil)
+    }
+
+    func copyPath(index: Int) {
+        guard let url = workingDirectory(index: index) else { return }
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(url.path, forType: .string)
+    }
+
+    func revealInFinder(index: Int) {
+        guard let url = workingDirectory(index: index) else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([url])
+    }
 }
 
 // MARK: - View
@@ -96,6 +143,7 @@ struct MiaottyTabsPanel: View {
     let onClose: () -> Void
 
     @StateObject private var model = MiaottyTabsModel()
+    @State private var hovering = false
 
     init(window: NSWindow?, ghostty: Ghostty.App, onClose: @escaping () -> Void) {
         self.window = window
@@ -106,58 +154,57 @@ struct MiaottyTabsPanel: View {
     var body: some View {
         VStack(spacing: 0) {
             toolbar
+                .opacity(hovering ? 1 : 0)
             header
             Divider()
             tabList
         }
         .frame(minWidth: 160, idealWidth: 220, maxWidth: 420)
-        .background(Color(nsColor: .controlBackgroundColor))
+        .background(Color(nsColor: .windowBackgroundColor))
+        .onHover { hovering = $0 }
         .onAppear { model.attach(window) }
         .onChange(of: window) { newWindow in model.attach(newWindow) }
     }
 
-    /// Top row: `+` (new tab) and the collapse button, right-aligned, with a
-    /// hover highlight (Otty's panel header).
+    /// `+` (new tab) and collapse, right-aligned, revealed on hover (Otty).
     private var toolbar: some View {
         HStack(spacing: 2) {
             Spacer(minLength: 0)
-
             MiaottyIconButton(systemImage: "plus", help: "New Tab") {
                 model.newTab(ghostty: ghostty)
             }
-
             MiaottyIconButton(systemImage: "sidebar.left", help: "Hide Tab List", action: onClose)
         }
+        .frame(height: 24)
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.top, 4)
     }
 
     private var header: some View {
         HStack(spacing: 4) {
-            MiaottySectionHeader("Tabs")
+            Text("TABS")
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.6)
+                .foregroundStyle(Color(nsColor: .secondaryLabelColor))
+
             Spacer(minLength: 0)
-            Button {
-            } label: {
-                Image(systemName: "line.3.horizontal.decrease")
-                    .frame(width: 20, height: 20)
-                    .contentShape(Rectangle())
+
+            MiaottyIconButton(systemImage: "line.3.horizontal.decrease", help: "Filter Tabs") {
             }
-            .buttonStyle(.plain)
-            .help("Filter Tabs")
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 12)
         .padding(.vertical, 4)
     }
 
     private var tabList: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 2) {
+            LazyVStack(alignment: .leading, spacing: 1) {
                 ForEach(Array(model.tabs.enumerated()), id: \.element.id) { index, info in
                     tabRow(index: index, info: info)
                 }
             }
             .padding(.horizontal, 6)
-            .padding(.vertical, 6)
+            .padding(.vertical, 4)
         }
     }
 
@@ -165,34 +212,86 @@ struct MiaottyTabsPanel: View {
         Button {
             model.select(index: index)
         } label: {
-            HStack(spacing: 6) {
-                RoundedRectangle(cornerRadius: 1.5)
-                    .fill(Color.accentColor)
-                    .frame(width: 3)
-                    .opacity(info.selected ? 1 : 0)
-
+            HStack(spacing: 8) {
                 Text(info.title.isEmpty ? "Untitled" : info.title)
+                    .font(.system(size: 13))
                     .lineLimit(1)
                     .truncationMode(.middle)
+                    .foregroundStyle(Color(nsColor: .labelColor))
 
                 Spacer(minLength: 4)
 
                 if index < 9 {
                     Text("\u{2318}\(index + 1)")
-                        .font(.caption2)
+                        .font(.system(size: 11))
                         .foregroundStyle(Color(nsColor: .secondaryLabelColor))
                 }
             }
-            .padding(.vertical, 5)
-            .padding(.horizontal, 6)
+            .padding(.vertical, 7)
+            .padding(.horizontal, 8)
             .contentShape(Rectangle())
             .background(
                 RoundedRectangle(cornerRadius: 6)
-                    .fill(info.selected
-                        ? Color(nsColor: .selectedContentBackgroundColor)
-                        : Color.clear)
+                    .fill(info.selected ? Color.primary.opacity(0.09) : Color.clear)
             )
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                model.rename(index: index)
+            } label: {
+                Label("Rename Tab…", systemImage: "pencil.line")
+            }
+
+            Divider()
+
+            if let url = model.workingDirectory(index: index) {
+                Button {
+                } label: {
+                    Label(url.path, systemImage: "folder")
+                }
+                .disabled(true)
+
+                Button {
+                    model.copyPath(index: index)
+                } label: {
+                    Label("Copy Path", systemImage: "doc.on.doc")
+                }
+
+                Button {
+                    model.revealInFinder(index: index)
+                } label: {
+                    Label("Reveal in Finder", systemImage: "folder")
+                }
+
+                Divider()
+            }
+
+            Button {
+                model.closeTab(index: index)
+            } label: {
+                Label("Close Tab", systemImage: "xmark")
+            }
+
+            Button {
+                model.closeOtherTabs(index: index)
+            } label: {
+                Label("Close Other Tabs", systemImage: "xmark")
+            }
+
+            Button {
+                model.closeTabsToTheRight(index: index)
+            } label: {
+                Label("Close Tabs to the Right", systemImage: "xmark")
+            }
+
+            Divider()
+
+            Button {
+                model.moveTabToNewWindow(index: index)
+            } label: {
+                Label("Move Tab to New Window", systemImage: "macwindow")
+            }
+        }
     }
 }
