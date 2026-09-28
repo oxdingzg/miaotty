@@ -1,18 +1,19 @@
+import AppKit
 import SwiftUI
 
 /// Lays out the terminal content between the optional left (tabs) and right
-/// (details) side panels. The panels are resizable via the native split view
-/// divider; the terminal area always takes the remaining space.
-///
-/// The hover-to-reveal strips for hidden panels are native AppKit views added
-/// above the terminal by `MiaottyEdgeReveal` (a SwiftUI overlay would sit under
-/// the terminal's NSView).
+/// (details) side panels. Uses a plain `HStack` (not `HSplitView`) so there is
+/// **no divider line** between the panels and the terminal — they share the
+/// same background, like Otty. Resizing is done with an invisible drag handle.
 struct MiaottyPanelLayout<Content: View, Left: View, Right: View>: View {
     let showTabs: Bool
     let showDetails: Bool
     private let left: () -> Left
     private let right: () -> Right
     private let content: () -> Content
+
+    @State private var leftWidth: CGFloat = 220
+    @State private var rightWidth: CGFloat = 320
 
     init(
         showTabs: Bool,
@@ -29,19 +30,56 @@ struct MiaottyPanelLayout<Content: View, Left: View, Right: View>: View {
     }
 
     var body: some View {
-        HSplitView {
+        HStack(spacing: 0) {
             if showTabs {
                 left()
-                    .frame(minWidth: 160, idealWidth: 220, maxWidth: 420)
+                    .frame(width: leftWidth)
+                MiaottyResizeHandle(width: $leftWidth, range: 160...420, sign: 1)
             }
 
             content()
-                .frame(minWidth: 200, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if showDetails {
+                MiaottyResizeHandle(width: $rightWidth, range: 220...640, sign: -1)
                 right()
-                    .frame(minWidth: 220, idealWidth: 320, maxWidth: 640)
+                    .frame(width: rightWidth)
             }
         }
+    }
+}
+
+/// An invisible, draggable handle used to resize a side panel. Shows the
+/// left-right resize cursor on hover; draws nothing (no divider line).
+private struct MiaottyResizeHandle: View {
+    @Binding var width: CGFloat
+    let range: ClosedRange<CGFloat>
+    /// +1 when the panel is to the left of the handle, -1 when to the right.
+    let sign: CGFloat
+
+    @State private var base: CGFloat?
+
+    var body: some View {
+        Rectangle()
+            .fill(Color.clear)
+            .frame(width: 5)
+            .contentShape(Rectangle())
+            .onHover { inside in
+                if inside {
+                    NSCursor.resizeLeftRight.push()
+                } else {
+                    NSCursor.pop()
+                }
+            }
+            .gesture(
+                DragGesture()
+                    .onChanged { value in
+                        let start = base ?? width
+                        if base == nil { base = start }
+                        let delta = sign * value.translation.width
+                        width = min(max(range.lowerBound, start + delta), range.upperBound)
+                    }
+                    .onEnded { _ in base = nil }
+            )
     }
 }
