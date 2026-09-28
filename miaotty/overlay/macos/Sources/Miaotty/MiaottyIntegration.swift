@@ -8,6 +8,7 @@ import GhosttyKit
 
 extension Notification.Name {
     static let miaottyAgentStateChanged = Notification.Name("miaotty.agentStateChanged")
+    static let miaottyHistoryChanged = Notification.Name("miaotty.historyChanged")
 }
 
 /// App-side glue: owns the MTP host and maps surfaces to panes.
@@ -15,6 +16,7 @@ final class MiaottyIntegration: PaneSource, @unchecked Sendable {
     static let shared = MiaottyIntegration()
 
     let registry = AgentRegistry()
+    let history = HistoryRegistry()
     let extensions = ExtensionRegistry()
     private(set) var host: HostServer?
     private(set) var socketPath: String = ""
@@ -41,8 +43,14 @@ final class MiaottyIntegration: PaneSource, @unchecked Sendable {
                     name: .miaottyAgentStateChanged, object: nil, userInfo: ["revision": rev])
             }
         }
+        history.onChange = { rev in
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: .miaottyHistoryChanged, object: nil, userInfo: ["revision": rev])
+            }
+        }
 
-        let server = HostServer(socketPath: socket, registry: registry, extensions: extensions, panes: self)
+        let server = HostServer(socketPath: socket, registry: registry, history: history, extensions: extensions, panes: self)
         do {
             try server.start()
             host = server
@@ -71,6 +79,13 @@ final class MiaottyIntegration: PaneSource, @unchecked Sendable {
         let shellDir = base.appendingPathComponent("shell-integration", isDirectory: true)
         try? fm.createDirectory(at: shellDir, withIntermediateDirectories: true)
         writeIfChanged(shellDir.appendingPathComponent("miaotty-env.sh"), Self.shellEnvTemplate(), mode: 0o644)
+
+        // Command history hook: sourced by the (patched) Ghostty zsh integration
+        // so the details "Outline" panel can list the commands run in a pane.
+        let hookURL = shellDir.appendingPathComponent("miaotty-hook.zsh")
+        writeIfChanged(hookURL, Self.shellHookTemplate(), mode: 0o644)
+        setenv("MIAOTTY_SHELL_HOOK", hookURL.path, 1)
+
         NSLog("miaotty: agent resources at \(base.path)")
     }
 
@@ -95,6 +110,19 @@ final class MiaottyIntegration: PaneSource, @unchecked Sendable {
         set -- state:\(agent) --state "$state"
         [ -n "$session" ] && set -- "$@" --session "$session"
         "$exe" "$@" >/dev/null 2>&1 || true
+        """
+    }
+
+    private static func shellHookTemplate() -> String {
+        """
+        # miaotty shell hook (zsh): reports each command run in this pane to the
+        # terminal so the details "Outline" panel can show it.
+        if [[ -n "${MIAOTTY_PANE_ID:-}" ]] && command -v miaotty-cli >/dev/null 2>&1; then
+          _miaotty_preexec() {
+            miaotty-cli history:add --command "$1" --cwd "$PWD" >/dev/null 2>&1 &
+          }
+          autoload -Uz add-zsh-hook 2>/dev/null && add-zsh-hook preexec _miaotty_preexec
+        fi
         """
     }
 

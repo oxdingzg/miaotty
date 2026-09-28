@@ -12,6 +12,7 @@ Public, durable decisions for miaotty. Private/design-context material lives in
 | [0005](./0005-app-integration.md) | Wire the integration spine into the app (child-pid C API, host hook, SPM, badge) | accepted |
 | [0006](./0006-identity-and-env-binding.md) | Pane identity, `MIAOTTY_PANE_ID` env binding, and product identity | accepted |
 | [0007](./0007-rebrand-miaotty.md) | Rebrand the app to miaotty (product/bundle/menu identity) | accepted |
+| [0008](./0008-side-panels.md) | Left tabs panel + right details panel (+ command history) | accepted |
 
 Format: context → decision → consequences. Keep ADRs short and append-only;
 supersede rather than rewrite.

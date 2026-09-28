@@ -93,6 +93,26 @@ if [ "$BUILD" -eq 1 ]; then
   export PATH="$SHIM_DIR:$ZIG_DIR:$PATH"
   target=native
   [ "$UNIVERSAL" -eq 1 ] && target=universal
+
+  # MiaottyKit (local SPM package): pre-build and mirror its products into the
+  # app build dir. The app's xcodebuild runs with a relative OBJROOT=build, so
+  # the package emits into its own `miaotty/macos/MiaottyKit/build`; the app's
+  # import path (`vendor/ghostty/macos/build/ReleaseLocal`) would not see it on
+  # a from-scratch build otherwise.
+  echo "== pre-building MiaottyKit package =="
+  ( cd "$root/miaotty/macos/MiaottyKit" && xcodebuild \
+      -scheme MiaottyKit -configuration ReleaseLocal \
+      -destination "platform=macOS,arch=arm64" \
+      SYMROOT=build OBJROOT=build build >/dev/null )
+  PKG="$root/miaotty/macos/MiaottyKit/build"
+  APPBUILD="$DEST/macos/build"
+  mkdir -p "$APPBUILD/ReleaseLocal" "$APPBUILD/GeneratedModuleMaps"
+  cp -R "$PKG/ReleaseLocal/MiaottyKit.swiftmodule" "$APPBUILD/ReleaseLocal/" 2>/dev/null || true
+  cp "$PKG/ReleaseLocal/MiaottyKit.o" "$APPBUILD/ReleaseLocal/" 2>/dev/null || true
+  cp -R "$PKG/ReleaseLocal/PackageFrameworks" "$APPBUILD/ReleaseLocal/" 2>/dev/null || true
+  cp -R "$PKG/ReleaseLocal/include" "$APPBUILD/ReleaseLocal/" 2>/dev/null || true
+  cp -R "$PKG/GeneratedModuleMaps/." "$APPBUILD/GeneratedModuleMaps/" 2>/dev/null || true
+
   ( cd "$DEST" && zig build -Doptimize=ReleaseFast -Dxcframework-target="$target" )
   echo
   echo "built: $DEST/zig-out/miaotty.app ($target)"

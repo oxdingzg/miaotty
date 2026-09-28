@@ -10,6 +10,7 @@ import Darwin
 public final class HostServer {
     public let socketPath: String
     public let registry: AgentRegistry
+    public let history: HistoryRegistry
     public let extensions: ExtensionRegistry
     public let panes: PaneSource
     public let sessionID = UUID().uuidString
@@ -22,11 +23,13 @@ public final class HostServer {
     public init(
         socketPath: String,
         registry: AgentRegistry = AgentRegistry(),
+        history: HistoryRegistry = HistoryRegistry(),
         extensions: ExtensionRegistry = ExtensionRegistry(),
         panes: PaneSource = InMemoryPaneSource()
     ) {
         self.socketPath = socketPath
         self.registry = registry
+        self.history = history
         self.extensions = extensions
         self.panes = panes
     }
@@ -219,6 +222,21 @@ public final class HostServer {
             return (try? MTPCodec.response(id: req.id, revision: snap.revision, result: result))
                 ?? MTPCodec.errorResponse(id: req.id, revision: snap.revision, code: "internal", message: "encode")
 
+        case ("history", "add"):
+            guard let params = req.params, let p = try? params.decode(HistoryAddParams.self) else {
+                return MTPCodec.errorResponse(id: req.id, revision: registry.currentRevision, code: "bad_request", message: "invalid HistoryAddParams")
+            }
+            let revision = history.add(p)
+            return (try? MTPCodec.response(id: req.id, revision: revision, result: ["revision": revision]))
+                ?? MTPCodec.errorResponse(id: req.id, revision: revision, code: "internal", message: "encode")
+
+        case ("history", "list"):
+            let query = req.params.flatMap { try? $0.decode(HistoryListQuery.self) }
+            let snap = history.list(paneID: query?.paneId, tty: query?.tty, limit: query?.limit)
+            let result = HistoryListResult(revision: snap.revision, entries: snap.entries)
+            return (try? MTPCodec.response(id: req.id, revision: snap.revision, result: result))
+                ?? MTPCodec.errorResponse(id: req.id, revision: snap.revision, code: "internal", message: "encode")
+
         case ("pane", "list"):
             let panes = self.panes.panes().map {
                 PaneListEntry(id: $0.id, childPid: $0.childPid, tty: $0.tty, cwd: $0.cwd, title: $0.title)
@@ -240,6 +258,19 @@ public final class HostServer {
 /// Capabilities advertised by the host in the scaffold.
 public enum MTPHostCaps {
     public static let value: [Capability] = [.coreBasic, .agentStateRead, .agentStateWrite]
+}
+
+/// Query payload for `history.list`.
+struct HistoryListQuery: Codable {
+    let paneId: String?
+    let tty: String?
+    let limit: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case paneId = "pane_id"
+        case tty
+        case limit
+    }
 }
 
 /// Result payload for `pane.list`.

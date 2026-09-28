@@ -1,0 +1,192 @@
+diff --git a/macos/Sources/App/macOS/MainMenu.xib b/macos/Sources/App/macOS/MainMenu.xib
+index 25fc6aa..32da9a2 100644
+--- a/macos/Sources/App/macOS/MainMenu.xib
++++ b/macos/Sources/App/macOS/MainMenu.xib
+@@ -370,6 +370,19 @@
+                                     <action selector="toggleTerminalInspector:" target="-1" id="87m-3R-fQl"/>
+                                 </connections>
+                             </menuItem>
++                            <menuItem isSeparatorItem="YES" id="miao-Pnl-sep"/>
++                            <menuItem title="Toggle Tabs Panel" keyEquivalent="l" id="miao-Pnl-tabs">
++                                <modifierMask key="keyEquivalentModifierMask" shift="YES" command="YES"/>
++                                <connections>
++                                    <action selector="toggleTabsPanel:" target="-1" id="miao-Pnl-tabs-act"/>
++                                </connections>
++                            </menuItem>
++                            <menuItem title="Toggle Details Panel" keyEquivalent="d" id="miao-Pnl-details">
++                                <modifierMask key="keyEquivalentModifierMask" option="YES" command="YES"/>
++                                <connections>
++                                    <action selector="toggleDetailsPanel:" target="-1" id="miao-Pnl-details-act"/>
++                                </connections>
++                            </menuItem>
+                         </items>
+                     </menu>
+                 </menuItem>
+diff --git a/macos/Sources/Features/Terminal/BaseTerminalController.swift b/macos/Sources/Features/Terminal/BaseTerminalController.swift
+index 9f8c816..bc0ddc1 100644
+--- a/macos/Sources/Features/Terminal/BaseTerminalController.swift
++++ b/macos/Sources/Features/Terminal/BaseTerminalController.swift
+@@ -51,6 +51,12 @@ class BaseTerminalController: NSWindowController,
+     /// Set if the terminal view should show the update overlay.
+     @Published var updateOverlayIsVisible: Bool = false
+ 
++    /// miaotty: whether the left vertical tabs panel is shown.
++    @Published var miaottyShowTabsPanel: Bool = false
++
++    /// miaotty: whether the right details panel is shown.
++    @Published var miaottyShowDetailsPanel: Bool = false
++
+     /// True when any surface in this controller currently has an active bell.
+     @Published private(set) var bell: Bool = false
+ 
+@@ -1399,6 +1405,16 @@ class BaseTerminalController: NSWindowController,
+         commandPaletteIsShowing.toggle()
+     }
+ 
++    // miaotty: toggle the left tabs panel / right details panel. See
++    // Sources/Miaotty/Panels for the SwiftUI implementations.
++    @IBAction func toggleTabsPanel(_ sender: Any?) {
++        miaottyShowTabsPanel.toggle()
++    }
++
++    @IBAction func toggleDetailsPanel(_ sender: Any?) {
++        miaottyShowDetailsPanel.toggle()
++    }
++
+     @IBAction func find(_ sender: Any) {
+         focusedSurface?.find(sender)
+     }
+diff --git a/macos/Sources/Features/Terminal/TerminalView.swift b/macos/Sources/Features/Terminal/TerminalView.swift
+index 3de0e94..2c8dc78 100644
+--- a/macos/Sources/Features/Terminal/TerminalView.swift
++++ b/macos/Sources/Features/Terminal/TerminalView.swift
+@@ -35,6 +35,16 @@ protocol TerminalViewModel: ObservableObject {
+ 
+     /// The update overlay should be visible.
+     var updateOverlayIsVisible: Bool { get }
++
++    /// miaotty: the window hosting this view, used by the side panels to
++    /// enumerate/switch tabs. `NSWindowController` satisfies this.
++    var window: NSWindow? { get }
++
++    /// miaotty: left (tabs) side panel visibility.
++    var miaottyShowTabsPanel: Bool { get set }
++
++    /// miaotty: right (details) side panel visibility.
++    var miaottyShowDetailsPanel: Bool { get set }
+ }
+ 
+ /// The main terminal view. This terminal view supports splits.
+@@ -64,6 +74,21 @@ struct TerminalView<ViewModel: TerminalViewModel>: View {
+         return URL(fileURLWithPath: surfacePwd)
+     }
+ 
++    // miaotty: identity of the focused pane, for the details panel.
++    private var focusedSurfaceHandle: ghostty_surface_t? {
++        lastFocusedSurface?.value?.surface
++    }
++
++    private var focusedPaneID: String? {
++        guard let handle = focusedSurfaceHandle else { return nil }
++        return String(cString: ghostty_surface_pane_id(handle))
++    }
++
++    private var focusedChildPID: Int32? {
++        guard let handle = focusedSurfaceHandle else { return nil }
++        return ghostty_surface_child_pid(handle)
++    }
++
+     var body: some View {
+         switch ghostty.readiness {
+         case .loading:
+@@ -79,30 +104,52 @@ struct TerminalView<ViewModel: TerminalViewModel>: View {
+                         DebugBuildWarningView()
+                     }
+ 
+-                    TerminalSplitTreeView(
+-                        tree: viewModel.surfaceTree,
+-                        action: { delegate?.performSplitAction($0) })
+-                        .environmentObject(ghostty)
+-                        .ghosttyLastFocusedSurface(lastFocusedSurface)
+-                        .focused($focused)
+-                        .onAppear { self.focused = true }
+-                        .onChange(of: focusedSurface) { newValue in
+-                            // We want to keep track of our last focused surface so even if
+-                            // we lose focus we keep this set to the last non-nil value.
+-                            if newValue != nil {
+-                                lastFocusedSurface = .init(newValue)
+-                                self.delegate?.focusedSurfaceDidChange(to: newValue)
+-                            }
+-                        }
+-                        .onChange(of: pwdURL) { newValue in
+-                            self.delegate?.pwdDidChange(to: newValue)
+-                        }
+-                        .onChange(of: cellSize) { newValue in
+-                            guard let size = newValue else { return }
+-                            self.delegate?.cellSizeDidChange(to: size)
+-                        }
+-                        .frame(idealWidth: lastFocusedSurface?.value?.initialSize?.width,
+-                               idealHeight: lastFocusedSurface?.value?.initialSize?.height)
++                    // miaotty: the terminal area sits between the optional left
++                    // (tabs) and right (details) side panels.
++                    MiaottyPanelLayout(
++                        showTabs: viewModel.miaottyShowTabsPanel,
++                        showDetails: viewModel.miaottyShowDetailsPanel,
++                        onShowTabs: { viewModel.miaottyShowTabsPanel = true },
++                        onShowDetails: { viewModel.miaottyShowDetailsPanel = true },
++                        left: {
++                            MiaottyTabsPanel(
++                                window: viewModel.window,
++                                ghostty: ghostty,
++                                onClose: { viewModel.miaottyShowTabsPanel = false })
++                        },
++                        right: {
++                            MiaottyDetailsPanel(
++                                cwd: surfacePwd,
++                                paneID: focusedPaneID,
++                                childPID: focusedChildPID,
++                                onClose: { viewModel.miaottyShowDetailsPanel = false })
++                        },
++                        content: {
++                            TerminalSplitTreeView(
++                                tree: viewModel.surfaceTree,
++                                action: { delegate?.performSplitAction($0) })
++                                .environmentObject(ghostty)
++                                .ghosttyLastFocusedSurface(lastFocusedSurface)
++                                .focused($focused)
++                                .onAppear { self.focused = true }
++                                .onChange(of: focusedSurface) { newValue in
++                                    // We want to keep track of our last focused surface so even if
++                                    // we lose focus we keep this set to the last non-nil value.
++                                    if newValue != nil {
++                                        lastFocusedSurface = .init(newValue)
++                                        self.delegate?.focusedSurfaceDidChange(to: newValue)
++                                    }
++                                }
++                                .onChange(of: pwdURL) { newValue in
++                                    self.delegate?.pwdDidChange(to: newValue)
++                                }
++                                .onChange(of: cellSize) { newValue in
++                                    guard let size = newValue else { return }
++                                    self.delegate?.cellSizeDidChange(to: size)
++                                }
++                                .frame(idealWidth: lastFocusedSurface?.value?.initialSize?.width,
++                                       idealHeight: lastFocusedSurface?.value?.initialSize?.height)
++                        })
+                 }
+                 // Ignore safe area to extend up in to the titlebar region if we have the "hidden" titlebar style
+                 .ignoresSafeArea(.container, edges: ghostty.config.macosTitlebarStyle == .hidden ? .top : [])
+diff --git a/src/shell-integration/zsh/ghostty-integration b/src/shell-integration/zsh/ghostty-integration
+index dc9bd16..2f00504 100644
+--- a/src/shell-integration/zsh/ghostty-integration
++++ b/src/shell-integration/zsh/ghostty-integration
+@@ -456,3 +456,9 @@ _ghostty_deferred_init() {
+ }
+ 
+ _entrypoint
++
++# miaotty: source the command-history hook installed by the app, if the
++# terminal exported one. Reports each command to the details "Outline" panel.
++if [[ -n "${MIAOTTY_SHELL_HOOK:-}" && -r "${MIAOTTY_SHELL_HOOK:-}" ]]; then
++    'builtin' 'source' '--' "${MIAOTTY_SHELL_HOOK}"
++fi
