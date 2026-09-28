@@ -22,6 +22,8 @@ UUID (external callers) or by child-PID ancestry. Agent hooks had to pass
    unchanged. Renaming them touches code signing, notarization, the Sparkle
    feed, AppleScript automation, and the test targets, and depends on the
    distribution decision (open question in the tech plan).
+   *(Superseded by ADR-0007, which rebrands the product/bundle/menu identity to
+   `miaotty`.)*
 5. **Ship hooks via install-on-launch.** The app writes the agent hook scripts
    and shell env to `~/.local/share/miaotty/...` on startup (idempotent),
    avoiding changes to Ghostty's resource pipeline.

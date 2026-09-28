@@ -10,7 +10,7 @@ A fast, native macOS terminal built for the `miao` AI coding agent — and for a
 Scaffold + **working Ghostty fork build**.
 
 - The Ghostty fork **builds on this machine**: `zig build -Doptimize=ReleaseFast
-  -Dxcframework-target=native` → `vendor/ghostty/zig-out/Ghostty.app` (arm64,
+  -Dxcframework-target=native` → `vendor/ghostty/zig-out/miaotty.app` (arm64,
   ReleaseFast, Metal). See `docs/ADR/0004-xcode26-build.md` for the Xcode 26 /
   macOS 26 workarounds and `scripts/bootstrap-ghostty.sh` to reproduce.
 - The **badge spine runs inside the app** (`docs/ADR/0005-app-integration.md`):

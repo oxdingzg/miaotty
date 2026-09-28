@@ -95,6 +95,6 @@ if [ "$BUILD" -eq 1 ]; then
   [ "$UNIVERSAL" -eq 1 ] && target=universal
   ( cd "$DEST" && zig build -Doptimize=ReleaseFast -Dxcframework-target="$target" )
   echo
-  echo "built: $DEST/zig-out/Ghostty.app ($target)"
-  "$DEST/zig-out/Ghostty.app/Contents/MacOS/ghostty" +version | head -1
+  echo "built: $DEST/zig-out/miaotty.app ($target)"
+  "$DEST/zig-out/miaotty.app/Contents/MacOS/ghostty" +version | head -1
 fi

@@ -11,12 +11,15 @@ upstream files ad hoc.
 |-------|-----|
 | [`patches/0001-xcode26-libtool-ranlib.patch`](./patches/0001-xcode26-libtool-ranlib.patch) | Zig 0.15.2 emits `ar` archives whose index Apple `libtool` (cctools_ld on Xcode 26) silently drops members from while merging — including the whole Zig core and C++ deps (imgui, oniguruma). Result: the macOS app fails to link with undefined `ghostty_*` / C++ symbols. The patch runs `ranlib` over every libtool input first, which rewrites the index so libtool keeps all members. |
 | [`patches/0002-miaotty-app-integration.patch`](./patches/0002-miaotty-app-integration.patch) | Wires the integration spine into the app: (1) `ghostty_surface_child_pid` + `ghostty_surface_pane_id` C API — a per-surface atomic PID and a core-generated pane id; (2) per-pane `MIAOTTY_PANE_ID` env injection at spawn; (3) `TERM_PROGRAM=miaotty`; (4) 3-line hooks in `SurfaceView` (attach) + `AppDelegate` (start host); (5) local SPM package `MiaottyKit` in `Ghostty.xcodeproj`; (6) `xcodebuild -scheme Ghostty` with `SYMROOT/OBJROOT=build` (`-target` builds SPM products but does not propagate their `.swiftmodule`); (7) `CFBundleDisplayName = miaotty`. |
+| [`patches/0003-rebrand-miaotty.patch`](./patches/0003-rebrand-miaotty.patch) | Full user-visible rebrand. `PRODUCT_NAME = miaotty` (which drives `CFBundleName` — the menu-bar name; `INFOPLIST_FILE` cannot override the generated value) and a distinct `PRODUCT_BUNDLE_IDENTIFIER = io.miaotty.terminal` so it no longer collides with an installed Ghostty. Rebrands the app menu, About panel + description + links, quit/error dialogs, default window titles, settings/error/intent strings, and the AppleScript `.sdef`. `GhosttyXcodebuild.zig` follows the new `miaotty.app` bundle path. The executable **filename** stays `ghostty` (`EXECUTABLE_NAME`) to avoid touching internal CLI/path references. |
 
 New (non-patch) source files live under [`macos/Sources/Miaotty/`](./macos/Sources/Miaotty/) and are copied into the checkout by `scripts/bootstrap-ghostty.sh`. The app target uses a `fileSystemSynchronizedGroups` `Sources/` group, so new files need no pbxproj entries. The same glue **installs the agent hook scripts + shell env** to `~/.local/share/miaotty/{agent-integration,shell-integration}` on launch (idempotent), so they ship without touching Ghostty's resource pipeline.
 
 ## Deferred (by decision, not missing)
 
-- **Bundle identity rename** (`PRODUCT_BUNDLE_IDENTIFIER`, product/app-bundle name, URL schemes): the user-visible name is now `miaotty` and `TERM_PROGRAM=miaotty`, but the bundle id and `Ghostty.app` product name are intentionally kept until the distribution decision (signing / notarization / Sparkle feed / tests). See `docs/ADR/0006-identity-and-env-binding.md`.
+- **Bundle identity** is now rebranded (patch 0003): `PRODUCT_NAME = miaotty`, `PRODUCT_BUNDLE_IDENTIFIER = io.miaotty.terminal`, `CFBundleName = miaotty`. Still deferred, because they depend on the distribution decision (signing / notarization / Sparkle feed / tests):
+  - The **executable filename** stays `ghostty` (`EXECUTABLE_NAME`); only the bundle/product/menu name is `miaotty`.
+  - The **app icon** is still Ghostty's ghost, the URL schemes and the Sparkle feed/public key are unchanged, and the app is **ad-hoc signed** (not notarized).
 
 ## Build toolchain quirks (Xcode 26 / macOS 26)
 

@@ -1,0 +1,556 @@
+diff --git a/macos/Ghostty-Info.plist b/macos/Ghostty-Info.plist
+index 7ffe12c..7e5efb8 100644
+--- a/macos/Ghostty-Info.plist
++++ b/macos/Ghostty-Info.plist
+@@ -2,6 +2,8 @@
+ <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+ <plist version="1.0">
+ <dict>
++	<key>CFBundleName</key>
++	<string>miaotty</string>
+ 	<key>NSAutoFillRequiresTextContentTypeForOneTimeCodeOnMac</key>
+ 	<true/>
+ 	<key>NSDockTilePlugIn</key>
+@@ -114,7 +116,7 @@
+ 			<key>UTTypeIdentifier</key>
+ 			<string>com.mitchellh.ghosttySurfaceId</string>
+ 			<key>UTTypeDescription</key>
+-			<string>Ghostty Surface Identifier</string>
++			<string>miaotty Surface Identifier</string>
+ 			<key>UTTypeConformsTo</key>
+ 			<array>
+ 				<string>public.data</string>
+diff --git a/macos/Ghostty.sdef b/macos/Ghostty.sdef
+index bdfc501..5744b06 100644
+--- a/macos/Ghostty.sdef
++++ b/macos/Ghostty.sdef
+@@ -1,15 +1,15 @@
+ <?xml version="1.0" encoding="UTF-8"?>
+ <!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+ 
+-<dictionary title="Ghostty Scripting Dictionary">
+-  <suite name="Ghostty Suite" code="Ghst" description="Ghostty scripting support.">
+-    <class name="application" code="capp" description="The Ghostty application.">
++<dictionary title="miaotty Scripting Dictionary">
++  <suite name="miaotty Suite" code="Ghst" description="miaotty scripting support.">
++    <class name="application" code="capp" description="The miaotty application.">
+       <cocoa class="NSApplication"/>
+       <property name="name" code="pnam" type="text" access="r" description="The name of the application."/>
+       <property name="frontmost" code="pisf" type="boolean" access="r" description="Is this the active application?">
+         <cocoa key="isActive"/>
+       </property>
+-      <property name="front window" code="GFWn" type="window" access="r" description="The frontmost Ghostty window.">
++      <property name="front window" code="GFWn" type="window" access="r" description="The frontmost miaotty window.">
+         <cocoa key="frontWindow"/>
+       </property>
+       <property name="version" code="vers" type="text" access="r" description="The version number of the application."/>
+@@ -38,7 +38,7 @@
+       </element>
+     </class>
+ 
+-    <class name="window" code="Gwnd" plural="windows" description="A Ghostty window containing one or more tabs.">
++    <class name="window" code="Gwnd" plural="windows" description="A miaotty window containing one or more tabs.">
+       <cocoa class="GhosttyScriptWindow"/>
+       <property name="id" code="ID  " type="text" access="r" description="Stable ID for this window."/>
+       <property name="name" code="pnam" type="text" access="r" description="The title of the window.">
+@@ -151,7 +151,7 @@
+       <enumerator name="stationary" code="SMst" description="Stationary."/>
+     </enumeration>
+ 
+-    <command name="perform action" code="GhstPfAc" description="Perform a Ghostty action string on a terminal.">
++    <command name="perform action" code="GhstPfAc" description="Perform a miaotty action string on a terminal.">
+       <direct-parameter type="text" description="The Ghostty action string."/>
+       <parameter name="on" code="GonT" type="terminal" description="Target terminal."/>
+       <result type="boolean" description="True when the action was performed."/>
+diff --git a/macos/Ghostty.xcodeproj/project.pbxproj b/macos/Ghostty.xcodeproj/project.pbxproj
+index 8d78a25..929c4c8 100644
+--- a/macos/Ghostty.xcodeproj/project.pbxproj
++++ b/macos/Ghostty.xcodeproj/project.pbxproj
+@@ -781,8 +781,8 @@
+ 				MACOSX_DEPLOYMENT_TARGET = 13.0;
+ 				MARKETING_VERSION = 0.1;
+ 				"OTHER_LDFLAGS[arch=*]" = "-lstdc++";
+-				PRODUCT_BUNDLE_IDENTIFIER = com.mitchellh.ghostty;
+-				PRODUCT_NAME = "$(TARGET_NAME)";
++				PRODUCT_BUNDLE_IDENTIFIER = io.miaotty.terminal;
++				PRODUCT_NAME = miaotty;
+ 				SWIFT_EMIT_LOC_STRINGS = YES;
+ 				SWIFT_OBJC_BRIDGING_HEADER = "Sources/App/macOS/ghostty-bridging-header.h";
+ 				SWIFT_VERSION = 5.0;
+@@ -1152,7 +1152,7 @@
+ 				EXECUTABLE_NAME = ghostty;
+ 				GENERATE_INFOPLIST_FILE = YES;
+ 				INFOPLIST_FILE = "Ghostty-Info.plist";
+-				INFOPLIST_KEY_CFBundleDisplayName = "Ghostty[DEBUG]";
++				INFOPLIST_KEY_CFBundleDisplayName = "miaotty[DEBUG]";
+ 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+ 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "A program running within Ghostty would like to use AppleScript.";
+ 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "A program running within Ghostty would like to use Bluetooth.";
+@@ -1178,8 +1178,8 @@
+ 				MACOSX_DEPLOYMENT_TARGET = 13.0;
+ 				MARKETING_VERSION = 0.1;
+ 				"OTHER_LDFLAGS[arch=*]" = "-lstdc++";
+-				PRODUCT_BUNDLE_IDENTIFIER = com.mitchellh.ghostty.debug;
+-				PRODUCT_NAME = "$(TARGET_NAME)";
++				PRODUCT_BUNDLE_IDENTIFIER = io.miaotty.terminal.debug;
++				PRODUCT_NAME = miaotty;
+ 				SWIFT_EMIT_LOC_STRINGS = YES;
+ 				SWIFT_OBJC_BRIDGING_HEADER = "Sources/App/macOS/ghostty-bridging-header.h";
+ 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+@@ -1233,8 +1233,8 @@
+ 				MACOSX_DEPLOYMENT_TARGET = 13.0;
+ 				MARKETING_VERSION = 0.1;
+ 				"OTHER_LDFLAGS[arch=*]" = "-lstdc++";
+-				PRODUCT_BUNDLE_IDENTIFIER = com.mitchellh.ghostty;
+-				PRODUCT_NAME = "$(TARGET_NAME)";
++				PRODUCT_BUNDLE_IDENTIFIER = io.miaotty.terminal;
++				PRODUCT_NAME = miaotty;
+ 				SWIFT_EMIT_LOC_STRINGS = YES;
+ 				SWIFT_OBJC_BRIDGING_HEADER = "Sources/App/macOS/ghostty-bridging-header.h";
+ 				SWIFT_VERSION = 5.0;
+diff --git a/macos/Sources/App/iOS/iOSApp.swift b/macos/Sources/App/iOS/iOSApp.swift
+index a1aafcc..26304e9 100644
+--- a/macos/Sources/App/iOS/iOSApp.swift
++++ b/macos/Sources/App/iOS/iOSApp.swift
+@@ -42,7 +42,7 @@ struct iOS_GhosttyInitView: View {
+                 .resizable()
+                 .aspectRatio(contentMode: .fit)
+                 .frame(maxHeight: 96)
+-            Text("Ghostty")
++            Text("miaotty")
+             Text("State: \(ghostty_app.readiness.rawValue)")
+         }
+         .padding()
+diff --git a/macos/Sources/App/macOS/AppDelegate.swift b/macos/Sources/App/macOS/AppDelegate.swift
+index f27be8a..35bb152 100644
+--- a/macos/Sources/App/macOS/AppDelegate.swift
++++ b/macos/Sources/App/macOS/AppDelegate.swift
+@@ -415,9 +415,9 @@ class AppDelegate: NSObject,
+ 
+         // We have some visible window. Show an app-wide modal to confirm quitting.
+         let alert = NSAlert()
+-        alert.messageText = "Quit Ghostty?"
++        alert.messageText = "Quit miaotty?"
+         alert.informativeText = "All terminal sessions will be terminated."
+-        alert.addButton(withTitle: "Close Ghostty")
++        alert.addButton(withTitle: "Close miaotty")
+         alert.addButton(withTitle: "Cancel")
+         alert.alertStyle = .warning
+         switch alert.runModal() {
+@@ -508,7 +508,7 @@ class AppDelegate: NSObject,
+             // may want to show this as a sheet on the focused window (especially if we're
+             // opening a tab). I'm not sure.
+             let alert = NSAlert()
+-            alert.messageText = "Allow Ghostty to execute \"\(filename)\"?"
++            alert.messageText = "Allow miaotty to execute \"\(filename)\"?"
+             alert.addButton(withTitle: "Allow")
+             alert.addButton(withTitle: "Cancel")
+             alert.alertStyle = .warning
+diff --git a/macos/Sources/App/macOS/MainMenu.xib b/macos/Sources/App/macOS/MainMenu.xib
+index 28c2a09..25fc6aa 100644
+--- a/macos/Sources/App/macOS/MainMenu.xib
++++ b/macos/Sources/App/macOS/MainMenu.xib
+@@ -76,11 +76,11 @@
+         <customObject id="YLy-65-1bz" customClass="NSFontManager"/>
+         <menu title="Main Menu" systemMenu="main" id="AYu-sK-qS6">
+             <items>
+-                <menuItem title="Ghostty" id="1Xt-HY-uBw">
++                <menuItem title="miaotty" id="1Xt-HY-uBw">
+                     <modifierMask key="keyEquivalentModifierMask"/>
+-                    <menu key="submenu" title="Ghostty" systemMenu="apple" id="uQy-DD-JDr">
++                    <menu key="submenu" title="miaotty" systemMenu="apple" id="uQy-DD-JDr">
+                         <items>
+-                            <menuItem title="About Ghostty" id="5kV-Vb-QxS">
++                            <menuItem title="About miaotty" id="5kV-Vb-QxS">
+                                 <modifierMask key="keyEquivalentModifierMask"/>
+                                 <connections>
+                                     <action selector="showAbout:" target="-1" id="tGt-68-tLn"/>
+@@ -110,7 +110,7 @@
+                                     <action selector="toggleSecureInput:" target="bbz-4X-AYv" id="vWx-z8-5Sy"/>
+                                 </connections>
+                             </menuItem>
+-                            <menuItem title="Make Ghostty the Default Terminal" id="b1t-oB-7MI" userLabel="Set Ghostty as Default Terminal App">
++                            <menuItem title="Make miaotty the Default Terminal" id="b1t-oB-7MI" userLabel="Set miaotty as Default Terminal App">
+                                 <modifierMask key="keyEquivalentModifierMask"/>
+                                 <connections>
+                                     <action selector="setAsDefaultTerminal:" target="bbz-4X-AYv" id="QHh-CA-Qho"/>
+@@ -122,7 +122,7 @@
+                                 <menu key="submenu" title="Services" id="aQe-vS-j8Q"/>
+                             </menuItem>
+                             <menuItem isSeparatorItem="YES" id="qno-yg-pur"/>
+-                            <menuItem title="Hide Ghostty" keyEquivalent="h" id="Olw-nP-bQN">
++                            <menuItem title="Hide miaotty" keyEquivalent="h" id="Olw-nP-bQN">
+                                 <connections>
+                                     <action selector="hide:" target="-1" id="PnN-Uc-m68"/>
+                                 </connections>
+@@ -140,7 +140,7 @@
+                                 </connections>
+                             </menuItem>
+                             <menuItem isSeparatorItem="YES" id="kCx-OE-vgT"/>
+-                            <menuItem title="Quit Ghostty" id="4sb-4s-VLi">
++                            <menuItem title="Quit miaotty" id="4sb-4s-VLi">
+                                 <modifierMask key="keyEquivalentModifierMask"/>
+                                 <connections>
+                                     <action selector="terminate:" target="-1" id="Te7-pn-YzF"/>
+@@ -523,7 +523,7 @@
+                     <modifierMask key="keyEquivalentModifierMask"/>
+                     <menu key="submenu" title="Help" systemMenu="help" id="F2S-fz-NVQ">
+                         <items>
+-                            <menuItem title="Ghostty Help" keyEquivalent="?" id="FKE-Sm-Kum">
++                            <menuItem title="miaotty Help" keyEquivalent="?" id="FKE-Sm-Kum">
+                                 <connections>
+                                     <action selector="showHelp:" target="bbz-4X-AYv" id="tiy-ow-xSw"/>
+                                 </connections>
+diff --git a/macos/Sources/App/macOS/main.swift b/macos/Sources/App/macOS/main.swift
+index ade9bf3..b540a0a 100644
+--- a/macos/Sources/App/macOS/main.swift
++++ b/macos/Sources/App/macOS/main.swift
+@@ -13,7 +13,7 @@ if ghostty_init(UInt(CommandLine.argc), CommandLine.unsafeArgv) != GHOSTTY_SUCCE
+     case .cli, .zig_run:
+         let stderrHandle = FileHandle.standardError
+         stderrHandle.write(
+-            "Ghostty failed to initialize! If you're executing Ghostty from the command line\n" +
++            "miaotty failed to initialize! If you're executing miaotty from the command line\n" +
+             "then this is usually because an invalid action or multiple actions were specified.\n" +
+             "Actions start with the `+` character.\n\n" +
+             "View all available actions by running `ghostty +help`.\n")
+diff --git a/macos/Sources/Features/About/AboutView.swift b/macos/Sources/Features/About/AboutView.swift
+index d9a12e4..e3ecb73 100644
+--- a/macos/Sources/Features/About/AboutView.swift
++++ b/macos/Sources/Features/About/AboutView.swift
+@@ -3,8 +3,8 @@ import SwiftUI
+ struct AboutView: View {
+     @Environment(\.openURL) var openURL
+ 
+-    private let githubURL = URL(string: "https://github.com/ghostty-org/ghostty")
+-    private let docsURL = URL(string: "https://ghostty.org/docs")
++    private let githubURL = URL(string: "https://github.com/oxdingzg/miaotty")
++    private let docsURL = URL(string: "https://github.com/oxdingzg/miaotty#readme")
+ 
+     /// Read the commit from the bundle.
+     private var build: String? { Bundle.main.infoDictionary?["CFBundleVersion"] as? String }
+@@ -47,10 +47,10 @@ struct AboutView: View {
+ 
+             VStack(alignment: .center, spacing: 32) {
+                 VStack(alignment: .center, spacing: 8) {
+-                    Text("Ghostty")
++                    Text("miaotty")
+                         .bold()
+                         .font(.title)
+-                    Text("Fast, native, feature-rich terminal \nemulator pushing modern features.")
++                    Text("A fast, native macOS terminal built \nfor the miao AI coding agent.")
+                         .multilineTextAlignment(.center)
+                         .fixedSize(horizontal: false, vertical: true)
+                         .font(.caption)
+diff --git a/macos/Sources/Features/About/CyclingIconView.swift b/macos/Sources/Features/About/CyclingIconView.swift
+index c2a860f..626d6f3 100644
+--- a/macos/Sources/Features/About/CyclingIconView.swift
++++ b/macos/Sources/Features/About/CyclingIconView.swift
+@@ -26,7 +26,7 @@ struct CyclingIconView: View {
+                 }
+             }
+         }
+-        .accessibilityLabel("Ghostty Application Icon")
++        .accessibilityLabel("miaotty Application Icon")
+         .accessibilityHint("Click to cycle through icon variants")
+     }
+ 
+diff --git a/macos/Sources/Features/App Intents/GhosttyIntentError.swift b/macos/Sources/Features/App Intents/GhosttyIntentError.swift
+index c52b7a5..a832455 100644
+--- a/macos/Sources/Features/App Intents/GhosttyIntentError.swift	
++++ b/macos/Sources/Features/App Intents/GhosttyIntentError.swift	
+@@ -5,9 +5,9 @@ enum GhosttyIntentError: Error, CustomLocalizedStringResourceConvertible {
+ 
+     var localizedStringResource: LocalizedStringResource {
+         switch self {
+-        case .appUnavailable: "The Ghostty app isn't properly initialized."
++        case .appUnavailable: "The miaotty app isn't properly initialized."
+         case .surfaceNotFound: "The terminal no longer exists."
+-        case .permissionDenied: "Ghostty doesn't allow Shortcuts."
++        case .permissionDenied: "miaotty doesn't allow Shortcuts."
+         }
+     }
+ }
+diff --git a/macos/Sources/Features/App Intents/IntentPermission.swift b/macos/Sources/Features/App Intents/IntentPermission.swift
+index 26a21e7..afb2712 100644
+--- a/macos/Sources/Features/App Intents/IntentPermission.swift	
++++ b/macos/Sources/Features/App Intents/IntentPermission.swift	
+@@ -45,7 +45,7 @@ func requestIntentPermission() async -> Bool {
+ 
+             PermissionRequest.show(
+                 "com.mitchellh.ghostty.shortcutsPermission",
+-                message: "Allow Shortcuts to interact with Ghostty?",
++                message: "Allow Shortcuts to interact with miaotty?",
+                 allowDuration: .forever,
+                 rememberDuration: nil,
+             ) { response in
+diff --git a/macos/Sources/Features/AppleScript/AppDelegate+AppleScript.swift b/macos/Sources/Features/AppleScript/AppDelegate+AppleScript.swift
+index 983217d..e143ed6 100644
+--- a/macos/Sources/Features/AppleScript/AppDelegate+AppleScript.swift
++++ b/macos/Sources/Features/AppleScript/AppDelegate+AppleScript.swift
+@@ -174,7 +174,7 @@ extension NSApplication {
+ 
+         guard let appDelegate = delegate as? AppDelegate else {
+             command.scriptErrorNumber = errAEEventFailed
+-            command.scriptErrorString = "Ghostty app delegate is unavailable."
++            command.scriptErrorString = "miaotty app delegate is unavailable."
+             return nil
+         }
+ 
+@@ -232,7 +232,7 @@ extension NSApplication {
+ 
+         guard let appDelegate = delegate as? AppDelegate else {
+             command.scriptErrorNumber = errAEEventFailed
+-            command.scriptErrorString = "Ghostty app delegate is unavailable."
++            command.scriptErrorString = "miaotty app delegate is unavailable."
+             return nil
+         }
+ 
+diff --git a/macos/Sources/Features/Command Palette/TerminalCommandPalette.swift b/macos/Sources/Features/Command Palette/TerminalCommandPalette.swift
+index 09e369d..6f794f6 100644
+--- a/macos/Sources/Features/Command Palette/TerminalCommandPalette.swift	
++++ b/macos/Sources/Features/Command Palette/TerminalCommandPalette.swift	
+@@ -92,7 +92,7 @@ struct TerminalCommandPaletteView: View {
+         // convey it'll go all the way through.
+         let title: String
+         if case .updateAvailable = updateViewModel.state {
+-            title = "Update Ghostty and Restart"
++            title = "Update miaotty and Restart"
+         } else {
+             title = updateViewModel.text
+         }
+diff --git a/macos/Sources/Features/QuickTerminal/QuickTerminal.xib b/macos/Sources/Features/QuickTerminal/QuickTerminal.xib
+index b2a99cb..3a82fdd 100644
+--- a/macos/Sources/Features/QuickTerminal/QuickTerminal.xib
++++ b/macos/Sources/Features/QuickTerminal/QuickTerminal.xib
+@@ -13,7 +13,7 @@
+         </customObject>
+         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+-        <window title="👻 Ghostty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="QuickTerminalWindow" customModule="Ghostty" customModuleProvider="target">
++        <window title="miaotty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" restorable="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="QuickTerminalWindow" customModule="Ghostty" customModuleProvider="target">
+             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+             <rect key="contentRect" x="196" y="240" width="480" height="270"/>
+diff --git a/macos/Sources/Features/Settings/SettingsView.swift b/macos/Sources/Features/Settings/SettingsView.swift
+index 6b0a2c4..69f64fd 100644
+--- a/macos/Sources/Features/Settings/SettingsView.swift
++++ b/macos/Sources/Features/Settings/SettingsView.swift
+@@ -14,7 +14,7 @@ struct SettingsView: View {
+             VStack(alignment: .leading) {
+                 Text("Coming Soon. 🚧").font(.title)
+                 Text("You can't configure settings in the GUI yet. To modify settings, " +
+-                     "edit the file at $HOME/.config/ghostty/config.ghostty and restart Ghostty.")
++                     "edit the file at $HOME/.config/ghostty/config.ghostty and restart miaotty.")
+                 .multilineTextAlignment(.leading)
+                 .lineLimit(nil)
+             }
+diff --git a/macos/Sources/Features/Terminal/BaseTerminalController.swift b/macos/Sources/Features/Terminal/BaseTerminalController.swift
+index d4b0ac0..9f8c816 100644
+--- a/macos/Sources/Features/Terminal/BaseTerminalController.swift
++++ b/macos/Sources/Features/Terminal/BaseTerminalController.swift
+@@ -96,7 +96,7 @@ class BaseTerminalController: NSWindowController,
+     }
+ 
+     /// The last computed title from the focused surface (without the override).
+-    private var lastComputedTitle: String = "👻"
++    private var lastComputedTitle: String = "miaotty"
+ 
+     /// The time that undo/redo operations that contain running ptys are valid for.
+     var undoExpiration: Duration {
+@@ -822,7 +822,7 @@ class BaseTerminalController: NSWindowController,
+                 .store(in: &focusedSurfaceCancellables)
+         } else {
+             // There is no surface to listen to titles for.
+-            titleDidChange(to: "👻")
++            titleDidChange(to: "miaotty")
+         }
+     }
+ 
+diff --git a/macos/Sources/Features/Terminal/ErrorView.swift b/macos/Sources/Features/Terminal/ErrorView.swift
+index 31078ac..9c51a01 100644
+--- a/macos/Sources/Features/Terminal/ErrorView.swift
++++ b/macos/Sources/Features/Terminal/ErrorView.swift
+@@ -10,7 +10,7 @@ struct ErrorView: View {
+ 
+             VStack(alignment: .leading) {
+                 Text("Oh, no. 😭").font(.title)
+-                Text("Something went fatally wrong.\nCheck the logs and restart Ghostty.")
++                Text("Something went fatally wrong.\nCheck the logs and restart miaotty.")
+             }
+         }
+         .padding()
+diff --git a/macos/Sources/Features/Terminal/TerminalView.swift b/macos/Sources/Features/Terminal/TerminalView.swift
+index b6e1c63..3de0e94 100644
+--- a/macos/Sources/Features/Terminal/TerminalView.swift
++++ b/macos/Sources/Features/Terminal/TerminalView.swift
+@@ -154,7 +154,7 @@ struct DebugBuildWarningView: View {
+             Image(systemName: "exclamationmark.triangle.fill")
+                 .foregroundColor(.yellow)
+ 
+-            Text("You're running a debug build of Ghostty! Performance will be degraded.")
++            Text("You're running a debug build of miaotty! Performance will be degraded.")
+                 .padding(.all, 8)
+                 .popover(isPresented: $isPopover, arrowEdge: .bottom) {
+                     Text("""
+@@ -171,7 +171,7 @@ struct DebugBuildWarningView: View {
+         .frame(maxWidth: .infinity)
+         .accessibilityElement(children: .combine)
+         .accessibilityLabel("Debug build warning")
+-        .accessibilityValue("Debug builds of Ghostty are very slow and you may experience performance problems. Debug builds are only recommended during development.")
++        .accessibilityValue("Debug builds of miaotty are very slow and you may experience performance problems. Debug builds are only recommended during development.")
+         .accessibilityAddTraits(.isStaticText)
+         .onTapGesture {
+             isPopover = true
+diff --git a/macos/Sources/Features/Terminal/Window Styles/Terminal.xib b/macos/Sources/Features/Terminal/Window Styles/Terminal.xib
+index 5b76a9b..e1d9723 100644
+--- a/macos/Sources/Features/Terminal/Window Styles/Terminal.xib	
++++ b/macos/Sources/Features/Terminal/Window Styles/Terminal.xib	
+@@ -13,7 +13,7 @@
+         </customObject>
+         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+-        <window title="👻 Ghostty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="TerminalWindow" customModule="Ghostty" customModuleProvider="target">
++        <window title="miaotty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="TerminalWindow" customModule="Ghostty" customModuleProvider="target">
+             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+             <rect key="contentRect" x="0.0" y="0.0" width="800" height="600"/>
+diff --git a/macos/Sources/Features/Terminal/Window Styles/TerminalHiddenTitlebar.xib b/macos/Sources/Features/Terminal/Window Styles/TerminalHiddenTitlebar.xib
+index eb46756..b9e0b22 100644
+--- a/macos/Sources/Features/Terminal/Window Styles/TerminalHiddenTitlebar.xib	
++++ b/macos/Sources/Features/Terminal/Window Styles/TerminalHiddenTitlebar.xib	
+@@ -13,7 +13,7 @@
+         </customObject>
+         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+-        <window title="👻 Ghostty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="HiddenTitlebarTerminalWindow" customModule="Ghostty" customModuleProvider="target">
++        <window title="miaotty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="HiddenTitlebarTerminalWindow" customModule="Ghostty" customModuleProvider="target">
+             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+             <rect key="contentRect" x="0.0" y="0.0" width="800" height="600"/>
+diff --git a/macos/Sources/Features/Terminal/Window Styles/TerminalTabsTitlebarTahoe.xib b/macos/Sources/Features/Terminal/Window Styles/TerminalTabsTitlebarTahoe.xib
+index ae7751b..e98ec0a 100644
+--- a/macos/Sources/Features/Terminal/Window Styles/TerminalTabsTitlebarTahoe.xib	
++++ b/macos/Sources/Features/Terminal/Window Styles/TerminalTabsTitlebarTahoe.xib	
+@@ -13,7 +13,7 @@
+         </customObject>
+         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+-        <window title="👻 Ghostty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="TitlebarTabsTahoeTerminalWindow" customModule="Ghostty" customModuleProvider="target">
++        <window title="miaotty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="TitlebarTabsTahoeTerminalWindow" customModule="Ghostty" customModuleProvider="target">
+             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+             <rect key="contentRect" x="0.0" y="0.0" width="800" height="600"/>
+diff --git a/macos/Sources/Features/Terminal/Window Styles/TerminalTabsTitlebarVentura.xib b/macos/Sources/Features/Terminal/Window Styles/TerminalTabsTitlebarVentura.xib
+index bf53a45..883cfd3 100644
+--- a/macos/Sources/Features/Terminal/Window Styles/TerminalTabsTitlebarVentura.xib	
++++ b/macos/Sources/Features/Terminal/Window Styles/TerminalTabsTitlebarVentura.xib	
+@@ -13,7 +13,7 @@
+         </customObject>
+         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+-        <window title="👻 Ghostty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="TitlebarTabsVenturaTerminalWindow" customModule="Ghostty" customModuleProvider="target">
++        <window title="miaotty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="TitlebarTabsVenturaTerminalWindow" customModule="Ghostty" customModuleProvider="target">
+             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+             <rect key="contentRect" x="0.0" y="0.0" width="800" height="600"/>
+diff --git a/macos/Sources/Features/Terminal/Window Styles/TerminalTransparentTitlebar.xib b/macos/Sources/Features/Terminal/Window Styles/TerminalTransparentTitlebar.xib
+index 25922e2..7840a2b 100644
+--- a/macos/Sources/Features/Terminal/Window Styles/TerminalTransparentTitlebar.xib	
++++ b/macos/Sources/Features/Terminal/Window Styles/TerminalTransparentTitlebar.xib	
+@@ -13,7 +13,7 @@
+         </customObject>
+         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+         <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+-        <window title="👻 Ghostty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="TransparentTitlebarTerminalWindow" customModule="Ghostty" customModuleProvider="target">
++        <window title="miaotty" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" animationBehavior="default" id="QvC-M9-y7g" customClass="TransparentTitlebarTerminalWindow" customModule="Ghostty" customModuleProvider="target">
+             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
+             <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+             <rect key="contentRect" x="0.0" y="0.0" width="800" height="600"/>
+diff --git a/macos/Sources/Features/Terminal/Window Styles/TitlebarTabsTahoeTerminalWindow.swift b/macos/Sources/Features/Terminal/Window Styles/TitlebarTabsTahoeTerminalWindow.swift
+index 6df1b14..24d2075 100644
+--- a/macos/Sources/Features/Terminal/Window Styles/TitlebarTabsTahoeTerminalWindow.swift	
++++ b/macos/Sources/Features/Terminal/Window Styles/TitlebarTabsTahoeTerminalWindow.swift	
+@@ -297,7 +297,7 @@ class TitlebarTabsTahoeTerminalWindow: TransparentTitlebarTerminalWindow, NSTool
+ 
+     class ViewModel: ObservableObject {
+         @Published var titleFont: NSFont?
+-        @Published var title: String = "👻 Ghostty"
++        @Published var title: String = "miaotty"
+         @Published var hasTabBar: Bool = false
+         @Published var isMainWindow: Bool = true
+     }
+diff --git a/macos/Sources/Features/Terminal/Window Styles/TitlebarTabsVenturaTerminalWindow.swift b/macos/Sources/Features/Terminal/Window Styles/TitlebarTabsVenturaTerminalWindow.swift
+index fe83fc5..edf80cc 100644
+--- a/macos/Sources/Features/Terminal/Window Styles/TitlebarTabsVenturaTerminalWindow.swift	
++++ b/macos/Sources/Features/Terminal/Window Styles/TitlebarTabsVenturaTerminalWindow.swift	
+@@ -586,7 +586,7 @@ private class WindowButtonsBackdropView: NSView {
+ // Custom NSToolbar subclass that displays a centered window title,
+ // in order to accommodate the titlebar tabs feature.
+ private class TerminalToolbar: NSToolbar, NSToolbarDelegate {
+-    private let titleTextField = CenteredDynamicLabel(labelWithString: "👻 Ghostty")
++    private let titleTextField = CenteredDynamicLabel(labelWithString: "miaotty")
+ 
+     var titleText: String {
+         get {
+diff --git a/macos/Sources/Features/Update/UpdatePopoverView.swift b/macos/Sources/Features/Update/UpdatePopoverView.swift
+index aa4e822..02cfcd4 100644
+--- a/macos/Sources/Features/Update/UpdatePopoverView.swift
++++ b/macos/Sources/Features/Update/UpdatePopoverView.swift
+@@ -62,7 +62,7 @@ private struct PermissionRequestView: View {
+                 Text("Enable automatic updates?")
+                     .font(.system(size: 13, weight: .semibold))
+ 
+-                Text("Ghostty can automatically check for updates in the background.")
++                Text("miaotty can automatically check for updates in the background.")
+                     .font(.system(size: 11))
+                     .foregroundColor(.secondary)
+                     .fixedSize(horizontal: false, vertical: true)
+diff --git a/macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift b/macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift
+index 9e71bb2..e59a406 100644
+--- a/macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift	
++++ b/macos/Sources/Ghostty/Surface View/SurfaceView_AppKit.swift	
+@@ -320,7 +320,7 @@ extension Ghostty {
+             // Set a timer to show the ghost emoji after 500ms if no title is set
+             titleFallbackTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: false) { [weak self] _ in
+                 if let self = self, self.title.isEmpty {
+-                    self.title = "👻"
++                    self.title = "miaotty"
+                 }
+             }
+ 
+@@ -602,7 +602,7 @@ extension Ghostty {
+                     // Empty means that user wants the title to be set automatically
+                     // We also need to reload the config for the "title" property to be
+                     // used again by this tab.
+-                    let prevTitle = titleFromTerminal ?? "👻"
++                    let prevTitle = titleFromTerminal ?? "miaotty"
+                     titleFromTerminal = nil
+                     setTitle(prevTitle)
+                 } else {
+diff --git a/macos/Sources/Ghostty/Surface View/SurfaceView_UIKit.swift b/macos/Sources/Ghostty/Surface View/SurfaceView_UIKit.swift
+index 9a4cf4d..0d6739b 100644
+--- a/macos/Sources/Ghostty/Surface View/SurfaceView_UIKit.swift	
++++ b/macos/Sources/Ghostty/Surface View/SurfaceView_UIKit.swift	
+@@ -12,7 +12,7 @@ extension Ghostty {
+         // The current title of the surface as defined by the pty. This can be
+         // changed with escape codes. This is public because the callbacks go
+         // to the app level and it is set from there.
+-        @Published var title: String = "👻"
++        @Published var title: String = "miaotty"
+ 
+         // The current pwd of the surface.
+         @Published var pwd: String?
+diff --git a/src/build/GhosttyXcodebuild.zig b/src/build/GhosttyXcodebuild.zig
+index 7923a3b..b00a0c5 100644
+--- a/src/build/GhosttyXcodebuild.zig
++++ b/src/build/GhosttyXcodebuild.zig
+@@ -49,7 +49,7 @@ pub fn init(
+     };
+ 
+     const env = try std.process.getEnvMap(b.allocator);
+-    const app_path = b.fmt("macos/build/{s}/Ghostty.app", .{xc_config});
++    const app_path = b.fmt("macos/build/{s}/miaotty.app", .{xc_config});
+ 
+     // Our step to build the Ghostty macOS app.
+     const build = build: {

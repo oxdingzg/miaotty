@@ -47,5 +47,5 @@ Reproduce the build with a tracked recipe rather than tribal knowledge:
 ## Verified
 
 `zig build -Doptimize=ReleaseFast -Dxcframework-target=native` produced
-`vendor/ghostty/zig-out/Ghostty.app` (arm64, ReleaseFast, Metal renderer),
+`vendor/ghostty/zig-out/miaotty.app` (arm64, ReleaseFast, Metal renderer),
 reporting `Ghostty 1.3.1`.
