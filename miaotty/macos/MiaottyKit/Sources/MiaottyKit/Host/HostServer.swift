@@ -219,6 +219,13 @@ public final class HostServer {
             return (try? MTPCodec.response(id: req.id, revision: snap.revision, result: result))
                 ?? MTPCodec.errorResponse(id: req.id, revision: snap.revision, code: "internal", message: "encode")
 
+        case ("pane", "list"):
+            let panes = self.panes.panes().map {
+                PaneListEntry(id: $0.id, childPid: $0.childPid, tty: $0.tty, cwd: $0.cwd, title: $0.title)
+            }
+            return (try? MTPCodec.response(id: req.id, revision: registry.currentRevision, result: PaneListResult(panes: panes)))
+                ?? MTPCodec.errorResponse(id: req.id, revision: registry.currentRevision, code: "internal", message: "encode")
+
         default:
             return MTPCodec.errorResponse(
                 id: req.id,
@@ -233,4 +240,25 @@ public final class HostServer {
 /// Capabilities advertised by the host in the scaffold.
 public enum MTPHostCaps {
     public static let value: [Capability] = [.coreBasic, .agentStateRead, .agentStateWrite]
+}
+
+/// Result payload for `pane.list`.
+struct PaneListResult: Encodable {
+    let panes: [PaneListEntry]
+}
+
+struct PaneListEntry: Encodable {
+    let id: String
+    let childPid: Int32?
+    let tty: String?
+    let cwd: String?
+    let title: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case childPid = "child_pid"
+        case tty
+        case cwd
+        case title
+    }
 }

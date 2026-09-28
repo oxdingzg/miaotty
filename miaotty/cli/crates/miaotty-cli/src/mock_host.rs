@@ -143,6 +143,7 @@ fn dispatch(reg: &mut Registry, req: Request) -> Response {
             .unwrap();
             ok(id, reg.revision, result)
         }
+        ("pane", "list") => ok(id, reg.revision, serde_json::json!({ "panes": [] })),
         _ => err(
             id,
             reg.revision,

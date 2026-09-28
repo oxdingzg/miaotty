@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "MiaottyKit",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v13)],
     products: [
         .library(name: "MiaottyKit", targets: ["MiaottyKit"]),
         .executable(name: "miaotty-host", targets: ["miaotty-host"]),

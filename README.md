@@ -13,6 +13,9 @@ Scaffold + **working Ghostty fork build**.
   -Dxcframework-target=native` → `vendor/ghostty/zig-out/Ghostty.app` (arm64,
   ReleaseFast, Metal). See `docs/ADR/0004-xcode26-build.md` for the Xcode 26 /
   macOS 26 workarounds and `scripts/bootstrap-ghostty.sh` to reproduce.
+- The **badge spine runs inside the app** (`docs/ADR/0005-app-integration.md`):
+  `miaotty-cli pane list` returns live panes + child PIDs, and `state set` drives
+  an on-pane agent badge (processing / awaiting / error / idle).
 - The **integration spine** is implemented and verified end-to-end:
   - **MTP** (Miaotty Terminal Protocol) — one versioned, capability-negotiated contract for the
     state / context / control / UI planes. Single JSON-Schema source, codegen for Rust, Swift, TS.

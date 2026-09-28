@@ -9,6 +9,10 @@ public final class AgentRegistry {
 
     private let lock = NSLock()
 
+    /// Invoked (on the mutating thread) after a state change. The UI layer is
+    /// expected to hop to the main thread and coalesce (see performance §6.1).
+    public var onChange: (@Sendable (Int) -> Void)?
+
     public init() {}
 
     /// Stable identity for a state entry: pane > tty > (agent, session).
@@ -21,7 +25,6 @@ public final class AgentRegistry {
     @discardableResult
     public func set(_ params: AgentStateSetParams) -> Int {
         lock.lock()
-        defer { lock.unlock() }
         revision += 1
         seq += 1
         let key = Self.key(agent: params.agent, sessionID: params.sessionId, paneID: params.paneId, tty: params.tty)
@@ -37,7 +40,11 @@ public final class AgentRegistry {
             ts: params.ts,
             seq: seq
         )
-        return revision
+        let rev = revision
+        lock.unlock()
+
+        onChange?(rev)
+        return rev
     }
 
     public func snapshot() -> (revision: Int, states: [AgentStateInfo]) {

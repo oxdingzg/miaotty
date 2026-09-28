@@ -39,8 +39,19 @@ enum Cmd {
         #[command(subcommand)]
         sub: StateCmd,
     },
+    /// Terminal topology.
+    Pane {
+        #[command(subcommand)]
+        sub: PaneCmd,
+    },
     /// Run a standalone dev host (no macOS app required).
     MockHost,
+}
+
+#[derive(Subcommand)]
+enum PaneCmd {
+    /// List panes known to the host.
+    List,
 }
 
 #[derive(Subcommand)]
@@ -144,6 +155,9 @@ fn main() -> Result<()> {
             };
             c.call("agent", "state.set", serde_json::to_value(params)?)?
         }
+        Cmd::Pane {
+            sub: PaneCmd::List,
+        } => c.call("pane", "list", serde_json::json!({}))?,
         Cmd::MockHost => unreachable!(),
     };
 

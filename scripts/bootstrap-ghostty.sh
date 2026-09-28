@@ -80,6 +80,13 @@ for p in "$root"/miaotty/overlay/patches/*.patch; do
   fi
 done
 
+# 3b) overlay source files (new files; the app target auto-syncs Sources/)
+if [ -d "$root/miaotty/overlay/macos/Sources" ]; then
+  mkdir -p "$DEST/macos/Sources"
+  cp -R "$root/miaotty/overlay/macos/Sources/." "$DEST/macos/Sources/"
+  echo "  copied overlay sources -> macos/Sources"
+fi
+
 # 4) build
 if [ "$BUILD" -eq 1 ]; then
   echo "== building (this takes a while) =="

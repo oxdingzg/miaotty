@@ -15,6 +15,7 @@ zig-out/
 
 # Swift / SPM
 /miaotty/macos/MiaottyKit/.build/
+/miaotty/macos/MiaottyKit/build/
 /miaotty/macos/MiaottyKit/.swiftpm/
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
