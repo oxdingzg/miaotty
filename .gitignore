@@ -3,3 +3,31 @@
 
 # docs/ 本身会公开,只有 private/ 子目录不提交
 docs/private/
+
+# Rust / Cargo
+/miaotty/cli/target/
+**/*.rs.bk
+
+# Zig
+.zig-cache/
+zig-out/
+/miaotty/tools/zig/
+
+# Swift / SPM
+/miaotty/macos/MiaottyKit/.build/
+/miaotty/macos/MiaottyKit/.swiftpm/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Node / TS
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Vendored Ghostty checkout (added by scripts/bootstrap-ghostty.sh)
+/vendor/ghostty/
+
+# Local build/dev artifacts
+/.build/
+*.sock
+*.log

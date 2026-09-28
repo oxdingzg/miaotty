@@ -1,0 +1,12 @@
+{
+  "$comment": "Performance budgets (design: miaotty-performance.md §2). CI fails on regressions beyond the thresholds.",
+  "frame_time_p99_ms": { "target": 4, "regression_pct": 5, "hard": true },
+  "key_to_glyph_p99_ms": { "target": 16, "regression_pct": 5, "hard": true },
+  "throughput_pct_of_ghostty": { "target": 95, "regression_pct": 5, "hard": true },
+  "cold_start_ms": { "target": 300, "regression_pct": 5, "hard": true },
+  "new_pane_ms": { "target": 50, "regression_pct": 10, "hard": false },
+  "memory_per_pane_mb": { "target": null, "regression_pct": 5, "hard": false },
+  "ipc_idle_cost": { "target": "~0", "hard": true },
+  "agent_state_burst_coalesce": { "target": "100 events -> 1 repaint", "hard": true },
+  "open_quickly_first_results_ms": { "target": 100, "regression_pct": 10, "hard": false }
+}
