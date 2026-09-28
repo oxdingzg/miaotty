@@ -60,6 +60,16 @@ final class MiaottyIntegration: PaneSource, @unchecked Sendable {
         }
 
         installAgentResources()
+
+        // Ensure the hover-to-reveal edge strips exist once a terminal window is
+        // available (attach may run before the view is in a window).
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification, object: nil, queue: .main
+        ) { note in
+            if let window = note.object as? NSWindow {
+                MiaottyEdgeReveal.install(on: window)
+            }
+        }
     }
 
     /// Install the agent hook scripts + shell env into a stable user dir, so
@@ -153,6 +163,14 @@ final class MiaottyIntegration: PaneSource, @unchecked Sendable {
 
         let badge = MiaottyBadgeView(paneID: paneID, integration: self)
         view.addSubview(badge)
+
+        // Install the native edge strips that reveal a show-panel button on
+        // hover (the SwiftUI overlay would sit under the terminal's NSView).
+        DispatchQueue.main.async {
+            if let window = view.window {
+                MiaottyEdgeReveal.install(on: window)
+            }
+        }
     }
 
     func detach(view: NSView) {

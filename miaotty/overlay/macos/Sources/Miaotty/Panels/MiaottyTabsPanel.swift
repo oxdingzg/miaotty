@@ -105,13 +105,7 @@ struct MiaottyTabsPanel: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // The + / collapse controls live in the titlebar (like Otty), not in
-            // the panel; this zero-size representable installs them.
-            MiaottyTitlebarControls(
-                onCreate: { model.newTab(ghostty: ghostty) },
-                onCollapse: onClose)
-                .frame(width: 0, height: 0)
-
+            toolbar
             header
             Divider()
             tabList
@@ -120,6 +114,22 @@ struct MiaottyTabsPanel: View {
         .background(Color(nsColor: .controlBackgroundColor))
         .onAppear { model.attach(window) }
         .onChange(of: window) { newWindow in model.attach(newWindow) }
+    }
+
+    /// Top row: `+` (new tab) and the collapse button, right-aligned, with a
+    /// hover highlight (Otty's panel header).
+    private var toolbar: some View {
+        HStack(spacing: 2) {
+            Spacer(minLength: 0)
+
+            MiaottyIconButton(systemImage: "plus", help: "New Tab") {
+                model.newTab(ghostty: ghostty)
+            }
+
+            MiaottyIconButton(systemImage: "sidebar.left", help: "Hide Tab List", action: onClose)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
     }
 
     private var header: some View {

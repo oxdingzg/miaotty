@@ -86,13 +86,7 @@ struct MiaottyDetailsPanel: View {
 
             Spacer(minLength: 0)
 
-            Button(action: onClose) {
-                Image(systemName: "sidebar.right")
-                    .frame(width: 22, height: 22)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help("Hide Details")
+            MiaottyIconButton(systemImage: "sidebar.right", help: "Hide Details", action: onClose)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
