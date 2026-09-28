@@ -7,16 +7,19 @@ A fast, native macOS terminal built for the `miao` AI coding agent — and for a
 
 ## Status
 
-Scaffold. The terminal app itself is not yet built (that step needs Xcode + Zig 0.15.2 + a Ghostty
-checkout — see `scripts/bootstrap-ghostty.sh`). What is implemented and verifiable today is the
-**integration spine**:
+Scaffold + **working Ghostty fork build**.
 
-- **MTP** (Miaotty Terminal Protocol) — one versioned, capability-negotiated contract for the
-  state / context / control / UI planes. Single JSON-Schema source, codegen for Rust, Swift, TS.
-- **`miaotty-cli`** (Rust) — control CLI, including a dev `mock-host`.
-- **`MiaottyKit`** (Swift) — the in-app host: MTP server, agent-state registry, extension points.
-- **`@miao/miaotty`** (TS) — miao plugin (server + TUI entries).
-- shell / agent integration resources, performance budgets and gates.
+- The Ghostty fork **builds on this machine**: `zig build -Doptimize=ReleaseFast
+  -Dxcframework-target=native` → `vendor/ghostty/zig-out/Ghostty.app` (arm64,
+  ReleaseFast, Metal). See `docs/ADR/0004-xcode26-build.md` for the Xcode 26 /
+  macOS 26 workarounds and `scripts/bootstrap-ghostty.sh` to reproduce.
+- The **integration spine** is implemented and verified end-to-end:
+  - **MTP** (Miaotty Terminal Protocol) — one versioned, capability-negotiated contract for the
+    state / context / control / UI planes. Single JSON-Schema source, codegen for Rust, Swift, TS.
+  - **`miaotty-cli`** (Rust) — control CLI, including a dev `mock-host`.
+  - **`MiaottyKit`** (Swift) — the in-app host: MTP server, agent-state registry, extension points.
+  - **`@miao/miaotty`** (TS) — miao plugin (server + TUI entries).
+  - shell / agent integration resources, performance budgets and gates.
 
 ## Layout
 

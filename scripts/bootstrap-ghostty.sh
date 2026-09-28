@@ -1,74 +1,93 @@
 #!/usr/bin/env bash
-# Bootstrap the Ghostty fork (the heavy, gated step).
+# Bootstrap the Ghostty fork and (optionally) build the macOS app.
 #
-# Nothing here runs destructively by default: it prints a plan. Pass --apply to
-# actually clone/update the upstream checkout, and --build to attempt a build.
+#   scripts/bootstrap-ghostty.sh                    # show plan + toolchain status
+#   scripts/bootstrap-ghostty.sh --apply            # install zig, clone, patch
+#   scripts/bootstrap-ghostty.sh --apply --build    # ...then build the app
+#   scripts/bootstrap-ghostty.sh --apply --build --universal   # arm64 + x86_64
 #
-#   scripts/bootstrap-ghostty.sh                 # show plan + toolchain status
-#   scripts/bootstrap-ghostty.sh --apply         # clone/update vendor/ghostty
-#   scripts/bootstrap-ghostty.sh --apply --build # also build (needs Xcode+Zig)
-#
-# Requires (only for --build): Zig 0.15.2, full Xcode selected, Metal toolchain.
+# Reproduces the known-good recipe for Ghostty 1.3.1 on this machine
+# (Xcode 26 / macOS 26). See miaotty/overlay/README.md for the gory details.
 set -euo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-TAG="1.3.1"
+TAG="v1.3.1"
+ZIG_VERSION="0.15.2"
 APPLY=0
 BUILD=0
+UNIVERSAL=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --tag) TAG="$2"; shift 2 ;;
     --apply) APPLY=1; shift ;;
-    --build) BUILD=1; shift ;;
+    --build) APPLY=1; BUILD=1; shift ;;
+    --universal) UNIVERSAL=1; shift ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
 
-dest="$root/vendor/ghostty"
-echo "upstream tag : $TAG"
-echo "checkout     : $dest"
-echo "overlay      : miaotty/ (cmake/patch points applied inside the checkout)"
+ZIG_DIR="$root/miaotty/tools/zig"
+ZIG="$ZIG_DIR/zig"
+SHIM_DIR="$root/scripts/xcrun-sdk-shim"
+DEST="$root/vendor/ghostty"
+SDK="$("$SHIM_DIR/xcrun" --show-sdk-path)"
+
+echo "upstream    : $TAG -> $DEST"
+echo "zig         : $ZIG_VERSION ($ZIG_DIR)"
+echo "sdk (zig)   : $SDK"
 echo
 
 echo "== toolchain =="
-zigv="$(zig version 2>/dev/null || echo none)"
-echo "  zig     : $zigv   (need 0.15.2 for Ghostty 1.3.x)"
-echo "  xcode   : $(xcode-select -p 2>/dev/null || echo none)"
-xcrun -f metal >/dev/null 2>&1 && echo "  metal   : present" || echo "  metal   : MISSING (Xcode > Settings > Components)"
+[ -x "$ZIG" ] && echo "  zig        : $("$ZIG" version)" || echo "  zig        : MISSING (will fetch)"
+dev="$(xcode-select -p 2>/dev/null || echo none)"
+echo "  xcode-select: $dev"
+xcrun -f metal >/dev/null 2>&1 && echo "  metal      : present" || echo "  metal      : MISSING -> xcodebuild -downloadComponent MetalToolchain"
 echo
 
-if [ "$zigv" != "0.15.2" ]; then
-  echo "NOTE: install Zig 0.15.2, e.g."
-  echo "  curl -LO https://ziglang.org/download/0.15.2/zig-macos-aarch64-0.15.2.tar.xz"
-  echo "  mkdir -p $root/miaotty/tools/zig && tar -xJf zig-macos-aarch64-0.15.2.tar.xz -C $root/miaotty/tools/zig --strip-components=1"
-  echo
-fi
-
 if [ "$APPLY" -eq 0 ]; then
-  echo "plan only. re-run with --apply to clone/update."
+  echo "plan only. re-run with --apply (--build to build)."
   exit 0
 fi
 
-if [ -d "$dest/.git" ]; then
-  echo "== updating upstream =="
-  git -C "$dest" fetch --tags origin
-  git -C "$dest" checkout "$TAG"
-else
-  echo "== cloning upstream =="
-  mkdir -p "$(dirname "$dest")"
-  git clone --depth 1 --branch "$TAG" https://github.com/ghostty-org/ghostty.git "$dest"
+# 1) Zig 0.15.2
+if [ ! -x "$ZIG" ]; then
+  echo "== fetching zig $ZIG_VERSION =="
+  mkdir -p "$ZIG_DIR"
+  curl -fsSL "https://ziglang.org/download/$ZIG_VERSION/zig-aarch64-macos-$ZIG_VERSION.tar.xz" \
+    | tar -xJ -C "$ZIG_DIR" --strip-components=1
 fi
-echo "upstream ready at $dest ($TAG)"
-echo
-echo "NEXT (manual, by design — see docs/ADR/0001-fork-ghostty.md):"
-echo "  1. apply the overlay: copy miaotty/macos/MiaottyKit into the checkout, add"
-echo "     the SPM dependency + the 4 patch points (child_pid C API, app hook, plist)."
-echo "  2. switch Xcode:  sudo xcode-select --switch /Applications/Xcode.app"
-echo "  3. build:  zig build -Doptimize=ReleaseFast"
+echo "zig: $("$ZIG" version)"
 
+# 2) upstream checkout
+if [ -d "$DEST/.git" ]; then
+  echo "== upstream already present ($(git -C "$DEST" describe --tags 2>/dev/null || echo '?')) =="
+else
+  echo "== cloning upstream $TAG =="
+  mkdir -p "$(dirname "$DEST")"
+  git clone --depth 1 --branch "$TAG" https://github.com/ghostty-org/ghostty.git "$DEST"
+fi
+
+# 3) patch series
+echo "== applying overlay patches =="
+for p in "$root"/miaotty/overlay/patches/*.patch; do
+  if git -C "$DEST" apply --reverse --check "$p" 2>/dev/null; then
+    echo "  ok (already applied): $(basename "$p")"
+  elif git -C "$DEST" apply --check "$p" 2>/dev/null; then
+    git -C "$DEST" apply "$p"
+    echo "  applied: $(basename "$p")"
+  else
+    echo "  SKIP (does not apply cleanly): $(basename "$p")" >&2
+  fi
+done
+
+# 4) build
 if [ "$BUILD" -eq 1 ]; then
+  echo "== building (this takes a while) =="
+  export PATH="$SHIM_DIR:$ZIG_DIR:$PATH"
+  target=native
+  [ "$UNIVERSAL" -eq 1 ] && target=universal
+  ( cd "$DEST" && zig build -Doptimize=ReleaseFast -Dxcframework-target="$target" )
   echo
-  echo "== building =="
-  ( cd "$dest" && zig build -Doptimize=ReleaseFast )
-  echo "built: $dest/zig-out/Ghostty.app"
+  echo "built: $DEST/zig-out/Ghostty.app ($target)"
+  "$DEST/zig-out/Ghostty.app/Contents/MacOS/ghostty" +version | head -1
 fi

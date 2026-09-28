@@ -1,0 +1,33 @@
+diff --git a/src/build/LibtoolStep.zig b/src/build/LibtoolStep.zig
+index d2b5149..7ce3ad7 100644
+--- a/src/build/LibtoolStep.zig
++++ b/src/build/LibtoolStep.zig
+@@ -27,13 +27,27 @@ output: LazyPath,
+ 
+ /// Run libtool against a list of library files to combine into a single
+ /// static library.
++///
++/// miaotty patch: archives emitted by Zig 0.15.2 carry an index that Apple
++/// libtool (cctools_ld on Xcode 26) does not recognize, so it silently drops
++/// members while merging (including the Zig core), which then fails to link
++/// with undefined `ghostty_*` / C++ symbols. Rewriting each input's index with
++/// `ranlib` makes libtool keep every member.
+ pub fn create(b: *std.Build, opts: Options) *LibtoolStep {
+     const self = b.allocator.create(LibtoolStep) catch @panic("OOM");
+ 
+     const run_step = RunStep.create(b, b.fmt("libtool {s}", .{opts.name}));
+     run_step.addArgs(&.{ "libtool", "-static", "-o" });
+     const output = run_step.addOutputFileArg(opts.out_name);
+-    for (opts.sources) |source| run_step.addFileArg(source);
++    for (opts.sources, 0..) |source, i| {
++        const fixed: LazyPath = fixed: {
++            const ranlib = RunStep.create(b, b.fmt("ranlib {s}[{d}]", .{ opts.name, i }));
++            ranlib.addArgs(&.{ "sh", "-c", "cp \"$1\" \"$2\" && chmod u+w \"$2\" && ranlib \"$2\"", "sh" });
++            ranlib.addFileArg(source);
++            break :fixed ranlib.addOutputFileArg("lib.a");
++        };
++        run_step.addFileArg(fixed);
++    }
+ 
+     self.* = .{
+         .step = &run_step.step,

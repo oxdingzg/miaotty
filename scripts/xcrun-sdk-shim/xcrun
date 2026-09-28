@@ -1,0 +1,19 @@
+#!/bin/sh
+# Force the macOS (default/macosx) SDK zig picks to 15.4, because zig 0.15.2
+# cannot link against the macOS 26.x SDK. Other SDKs (ios, etc.) delegate.
+SDK=/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk
+sdkreq=""; prev=""
+for a in "$@"; do
+  if [ "$prev" = "-sdk" ] || [ "$prev" = "--sdk" ]; then sdkreq="$a"; fi
+  prev="$a"
+done
+case "$sdkreq" in
+  ""|macosx|macos*)
+    for a in "$@"; do
+      case "$a" in
+        --show-sdk-path) echo "$SDK"; exit 0 ;;
+        --show-sdk-version) echo "15.4"; exit 0 ;;
+      esac
+    done ;;
+esac
+exec /usr/bin/xcrun "$@"
