@@ -129,7 +129,8 @@ final class MiaottyIntegration: PaneSource, @unchecked Sendable {
         # terminal so the details "Outline" panel can show it.
         if [[ -n "${MIAOTTY_PANE_ID:-}" ]] && command -v miaotty-cli >/dev/null 2>&1; then
           _miaotty_preexec() {
-            miaotty-cli history:add --command "$1" --cwd "$PWD" >/dev/null 2>&1 &
+            builtin setopt localoptions no_notify no_monitor 2>/dev/null
+            ( miaotty-cli history:add --command "$1" --cwd "$PWD" >/dev/null 2>&1 & )
           }
           autoload -Uz add-zsh-hook 2>/dev/null && add-zsh-hook preexec _miaotty_preexec
         fi

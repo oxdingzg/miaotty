@@ -57,7 +57,7 @@ index 9f8c816..bc0ddc1 100644
          focusedSurface?.find(sender)
      }
 diff --git a/macos/Sources/Features/Terminal/TerminalView.swift b/macos/Sources/Features/Terminal/TerminalView.swift
-index 3de0e94..2c8dc78 100644
+index 3de0e94..8289d2d 100644
 --- a/macos/Sources/Features/Terminal/TerminalView.swift
 +++ b/macos/Sources/Features/Terminal/TerminalView.swift
 @@ -35,6 +35,16 @@ protocol TerminalViewModel: ObservableObject {
@@ -99,7 +99,7 @@ index 3de0e94..2c8dc78 100644
      var body: some View {
          switch ghostty.readiness {
          case .loading:
-@@ -79,30 +104,52 @@ struct TerminalView<ViewModel: TerminalViewModel>: View {
+@@ -79,30 +104,50 @@ struct TerminalView<ViewModel: TerminalViewModel>: View {
                          DebugBuildWarningView()
                      }
  
@@ -132,8 +132,6 @@ index 3de0e94..2c8dc78 100644
 +                    MiaottyPanelLayout(
 +                        showTabs: viewModel.miaottyShowTabsPanel,
 +                        showDetails: viewModel.miaottyShowDetailsPanel,
-+                        onShowTabs: { viewModel.miaottyShowTabsPanel = true },
-+                        onShowDetails: { viewModel.miaottyShowDetailsPanel = true },
 +                        left: {
 +                            MiaottyTabsPanel(
 +                                window: viewModel.window,
@@ -176,6 +174,86 @@ index 3de0e94..2c8dc78 100644
                  }
                  // Ignore safe area to extend up in to the titlebar region if we have the "hidden" titlebar style
                  .ignoresSafeArea(.container, edges: ghostty.config.macosTitlebarStyle == .hidden ? .top : [])
+diff --git a/macos/Sources/Features/Terminal/Window Styles/TerminalWindow.swift b/macos/Sources/Features/Terminal/Window Styles/TerminalWindow.swift
+index e19d671..ce0781d 100644
+--- a/macos/Sources/Features/Terminal/Window Styles/TerminalWindow.swift	
++++ b/macos/Sources/Features/Terminal/Window Styles/TerminalWindow.swift	
+@@ -704,6 +704,12 @@ extension TerminalWindow {
+ 
+     private static let tabColorPaletteIdentifier = NSUserInterfaceItemIdentifier("com.mitchellh.ghostty.tabColorPalette")
+ 
++    // miaotty: working-directory section (header + Copy Path + Reveal), like Otty.
++    private static let cwdHeaderIdentifier = NSUserInterfaceItemIdentifier("io.miaotty.cwdHeader")
++    private static let cwdSeparatorIdentifier = NSUserInterfaceItemIdentifier("io.miaotty.cwdSeparator")
++    private static let cwdCopyPathIdentifier = NSUserInterfaceItemIdentifier("io.miaotty.cwdCopyPath")
++    private static let cwdRevealIdentifier = NSUserInterfaceItemIdentifier("io.miaotty.cwdReveal")
++
+     func configureTabContextMenuIfNeeded(_ menu: NSMenu) {
+         guard isTabContextMenu(menu) else { return }
+ 
+@@ -734,6 +740,62 @@ extension TerminalWindow {
+         }
+ 
+         appendTabModifierSection(to: menu, target: targetController)
++        appendWorkingDirectorySection(to: menu, target: targetController)
++    }
++
++    /// miaotty: a folder-unlabeled section showing the working directory and
++    /// Copy Path / Reveal in Finder actions (Otty parity).
++    private func appendWorkingDirectorySection(to menu: NSMenu, target: TerminalController?) {
++        menu.removeItems(withIdentifiers: [
++            Self.cwdSeparatorIdentifier,
++            Self.cwdHeaderIdentifier,
++            Self.cwdCopyPathIdentifier,
++            Self.cwdRevealIdentifier,
++        ])
++
++        guard let url = target?.window?.representedURL else { return }
++
++        let separator = NSMenuItem.separator()
++        separator.identifier = Self.cwdSeparatorIdentifier
++        menu.addItem(separator)
++
++        let header = NSMenuItem(title: url.path, action: nil, keyEquivalent: "")
++        header.identifier = Self.cwdHeaderIdentifier
++        header.isEnabled = false
++        header.image = NSImage(systemSymbolName: "folder", accessibilityDescription: nil)
++        menu.addItem(header)
++
++        let copy = NSMenuItem(
++            title: "Copy Path",
++            action: #selector(TerminalWindow.miaottyCopyWorkingDirectory(_:)),
++            keyEquivalent: "")
++        copy.identifier = Self.cwdCopyPathIdentifier
++        copy.target = self
++        copy.representedObject = url
++        copy.setImageIfDesired(systemSymbolName: "doc.on.doc")
++        menu.addItem(copy)
++
++        let reveal = NSMenuItem(
++            title: "Reveal in Finder",
++            action: #selector(TerminalWindow.miaottyRevealWorkingDirectory(_:)),
++            keyEquivalent: "")
++        reveal.identifier = Self.cwdRevealIdentifier
++        reveal.target = self
++        reveal.representedObject = url
++        reveal.setImageIfDesired(systemSymbolName: "folder")
++        menu.addItem(reveal)
++    }
++
++    @objc private func miaottyCopyWorkingDirectory(_ sender: NSMenuItem) {
++        guard let url = sender.representedObject as? URL else { return }
++        let pb = NSPasteboard.general
++        pb.clearContents()
++        pb.setString(url.path, forType: .string)
++    }
++
++    @objc private func miaottyRevealWorkingDirectory(_ sender: NSMenuItem) {
++        guard let url = sender.representedObject as? URL else { return }
++        NSWorkspace.shared.activateFileViewerSelecting([url])
+     }
+ 
+     private func isTabContextMenu(_ menu: NSMenu) -> Bool {
 diff --git a/src/shell-integration/zsh/ghostty-integration b/src/shell-integration/zsh/ghostty-integration
 index dc9bd16..2f00504 100644
 --- a/src/shell-integration/zsh/ghostty-integration
