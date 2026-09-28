@@ -57,7 +57,7 @@ index 9f8c816..bc0ddc1 100644
          focusedSurface?.find(sender)
      }
 diff --git a/macos/Sources/Features/Terminal/TerminalView.swift b/macos/Sources/Features/Terminal/TerminalView.swift
-index 3de0e94..8289d2d 100644
+index 3de0e94..6820441 100644
 --- a/macos/Sources/Features/Terminal/TerminalView.swift
 +++ b/macos/Sources/Features/Terminal/TerminalView.swift
 @@ -35,6 +35,16 @@ protocol TerminalViewModel: ObservableObject {
@@ -99,7 +99,7 @@ index 3de0e94..8289d2d 100644
      var body: some View {
          switch ghostty.readiness {
          case .loading:
-@@ -79,30 +104,50 @@ struct TerminalView<ViewModel: TerminalViewModel>: View {
+@@ -79,30 +104,51 @@ struct TerminalView<ViewModel: TerminalViewModel>: View {
                          DebugBuildWarningView()
                      }
  
@@ -143,6 +143,7 @@ index 3de0e94..8289d2d 100644
 +                                cwd: surfacePwd,
 +                                paneID: focusedPaneID,
 +                                childPID: focusedChildPID,
++                                background: ghostty.config.backgroundColor,
 +                                onClose: { viewModel.miaottyShowDetailsPanel = false })
 +                        },
 +                        content: {

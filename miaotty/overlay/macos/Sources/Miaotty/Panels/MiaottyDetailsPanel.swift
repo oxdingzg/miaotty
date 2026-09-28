@@ -33,15 +33,17 @@ struct MiaottyDetailsPanel: View {
     let cwd: String?
     let paneID: String?
     let childPID: Int32?
+    let background: Color
     let onClose: () -> Void
 
     @State private var tab: MiaottyDetailsTab = .info
     @State private var history: [MiaottyHistoryEntry] = []
 
-    init(cwd: String?, paneID: String?, childPID: Int32?, onClose: @escaping () -> Void) {
+    init(cwd: String?, paneID: String?, childPID: Int32?, background: Color, onClose: @escaping () -> Void) {
         self.cwd = cwd
         self.paneID = paneID
         self.childPID = childPID
+        self.background = background
         self.onClose = onClose
     }
 
@@ -53,7 +55,7 @@ struct MiaottyDetailsPanel: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .frame(minWidth: 220, idealWidth: 320, maxWidth: 640)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(background)
         .onAppear { loadHistory() }
         .onChange(of: paneID) { _ in loadHistory() }
         .onReceive(NotificationCenter.default.publisher(for: .miaottyHistoryChanged)) { _ in

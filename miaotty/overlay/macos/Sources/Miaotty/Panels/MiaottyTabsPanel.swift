@@ -160,7 +160,7 @@ struct MiaottyTabsPanel: View {
             tabList
         }
         .frame(minWidth: 160, idealWidth: 220, maxWidth: 420)
-        .background(Color(nsColor: .windowBackgroundColor))
+        .background(ghostty.config.backgroundColor)
         .onHover { hovering = $0 }
         .onAppear { model.attach(window) }
         .onChange(of: window) { newWindow in model.attach(newWindow) }
