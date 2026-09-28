@@ -1,0 +1,293 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://miaotty.dev/proto/mtp.schema.json",
+  "title": "MTP — Miaotty Terminal Protocol",
+  "description": "Single source of truth for the MTP wire types. Codegen emits Rust (serde), Swift (Codable) and TypeScript. New fields are always optional; unknown fields/capabilities must be ignored by both peers.",
+  "x-mtp-version": 1,
+  "$defs": {
+    "ProtoRange": {
+      "type": "object",
+      "description": "Protocol version range a peer supports.",
+      "properties": {
+        "min": { "type": "integer", "minimum": 1 },
+        "max": { "type": "integer", "minimum": 1 }
+      },
+      "required": ["min", "max"],
+      "additionalProperties": false
+    },
+    "Role": {
+      "type": "string",
+      "description": "What a connection can act as. A process may hold several roles.",
+      "enum": ["host", "client", "provider", "agent"]
+    },
+    "Capability": {
+      "type": "string",
+      "description": "A named capability negotiated at hello time. Unknown capabilities are ignored.",
+      "enum": [
+        "core.basic",
+        "terminal.control",
+        "terminal.io",
+        "terminal.context.read",
+        "terminal.context.write",
+        "agent.state.read",
+        "agent.state.write",
+        "session.bind",
+        "action.invoke",
+        "attention.notify",
+        "ui.host",
+        "provider.quickOpen",
+        "provider.detailsView",
+        "provider.badge",
+        "provider.action"
+      ]
+    },
+    "Limits": {
+      "type": "object",
+      "description": "Advertised by the host so clients can self-throttle.",
+      "properties": {
+        "max_message_bytes": { "type": "integer", "minimum": 1 },
+        "rate_per_sec": { "type": "integer", "minimum": 1 },
+        "idle_timeout_ms": { "type": "integer", "minimum": 1 }
+      },
+      "required": ["max_message_bytes", "rate_per_sec", "idle_timeout_ms"],
+      "additionalProperties": false
+    },
+    "HelloParams": {
+      "type": "object",
+      "properties": {
+        "proto": { "$ref": "#/$defs/ProtoRange" },
+        "app_version": { "type": "string" },
+        "roles": { "type": "array", "items": { "$ref": "#/$defs/Role" } },
+        "caps": { "type": "array", "items": { "$ref": "#/$defs/Capability" } },
+        "client_id": { "type": "string" }
+      },
+      "required": ["proto", "app_version", "roles", "caps", "client_id"],
+      "additionalProperties": false
+    },
+    "WelcomeParams": {
+      "type": "object",
+      "properties": {
+        "proto": { "type": "integer", "minimum": 1 },
+        "session": { "type": "string" },
+        "caps": { "type": "array", "items": { "$ref": "#/$defs/Capability" } },
+        "limits": { "$ref": "#/$defs/Limits" },
+        "revision": { "type": "integer" }
+      },
+      "required": ["proto", "session", "caps", "limits", "revision"],
+      "additionalProperties": false
+    },
+    "ErrorInfo": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "no_pane",
+            "stale_revision",
+            "cap_missing",
+            "rate_limited",
+            "timeout",
+            "provider_error",
+            "version_mismatch",
+            "bad_request",
+            "internal"
+          ]
+        },
+        "message": { "type": "string" },
+        "retryable": { "type": "boolean" },
+        "details": { "type": "object", "additionalProperties": true }
+      },
+      "required": ["code", "message", "retryable"],
+      "additionalProperties": false
+    },
+    "Request": {
+      "type": "object",
+      "description": "kind=req",
+      "properties": {
+        "v": { "type": "integer", "minimum": 1 },
+        "id": { "type": "integer" },
+        "kind": { "const": "req" },
+        "ns": { "type": "string" },
+        "method": { "type": "string" },
+        "params": { "type": "object", "additionalProperties": true },
+        "role": { "$ref": "#/$defs/Role" },
+        "caps": { "type": "array", "items": { "$ref": "#/$defs/Capability" } },
+        "ts": { "type": "integer" },
+        "trace": { "type": "string" }
+      },
+      "required": ["v", "id", "kind", "ns", "method"],
+      "additionalProperties": false
+    },
+    "Response": {
+      "type": "object",
+      "description": "kind=res",
+      "properties": {
+        "v": { "type": "integer", "minimum": 1 },
+        "id": { "type": "integer" },
+        "kind": { "const": "res" },
+        "ok": { "type": "boolean" },
+        "result": { "type": "object", "additionalProperties": true },
+        "error": { "$ref": "#/$defs/ErrorInfo" },
+        "revision": { "type": "integer" }
+      },
+      "required": ["v", "id", "kind", "ok"],
+      "additionalProperties": false
+    },
+    "Event": {
+      "type": "object",
+      "description": "kind=evt",
+      "properties": {
+        "v": { "type": "integer", "minimum": 1 },
+        "kind": { "const": "evt" },
+        "ns": { "type": "string" },
+        "event": { "type": "string" },
+        "data": { "type": "object", "additionalProperties": true },
+        "seq": { "type": "integer" },
+        "replayable": { "type": "boolean" }
+      },
+      "required": ["v", "kind", "ns", "event"],
+      "additionalProperties": false
+    },
+    "AgentState": {
+      "type": "string",
+      "enum": ["processing", "idle", "awaiting", "error"]
+    },
+    "AgentStateSetParams": {
+      "type": "object",
+      "properties": {
+        "agent": { "type": "string" },
+        "session_id": { "type": "string" },
+        "pane_id": { "type": "string" },
+        "tty": { "type": "string" },
+        "agent_pid": { "type": "integer" },
+        "state": { "$ref": "#/$defs/AgentState" },
+        "cwd": { "type": "string" },
+        "bypass": { "type": "boolean" },
+        "error_kind": { "type": "string" },
+        "title": { "type": "string" },
+        "ts": { "type": "integer" }
+      },
+      "required": ["agent", "state"],
+      "additionalProperties": false
+    },
+    "AgentStateInfo": {
+      "type": "object",
+      "properties": {
+        "agent": { "type": "string" },
+        "session_id": { "type": "string" },
+        "pane_id": { "type": "string" },
+        "state": { "$ref": "#/$defs/AgentState" },
+        "cwd": { "type": "string" },
+        "bypass": { "type": "boolean" },
+        "error_kind": { "type": "string" },
+        "title": { "type": "string" },
+        "ts": { "type": "integer" },
+        "seq": { "type": "integer" }
+      },
+      "required": ["agent", "state"],
+      "additionalProperties": false
+    },
+    "AgentStateListResult": {
+      "type": "object",
+      "properties": {
+        "revision": { "type": "integer" },
+        "states": { "type": "array", "items": { "$ref": "#/$defs/AgentStateInfo" } }
+      },
+      "required": ["revision", "states"],
+      "additionalProperties": false
+    },
+    "PingResult": {
+      "type": "object",
+      "properties": {
+        "proto": { "type": "integer" },
+        "app_version": { "type": "string" },
+        "pid": { "type": "integer" },
+        "caps": { "type": "array", "items": { "$ref": "#/$defs/Capability" } }
+      },
+      "required": ["proto", "app_version", "pid", "caps"],
+      "additionalProperties": false
+    },
+    "HealthResult": {
+      "type": "object",
+      "properties": {
+        "ok": { "type": "boolean" },
+        "revision": { "type": "integer" },
+        "connections": { "type": "integer" },
+        "events_per_sec": { "type": "number" },
+        "dropped_events": { "type": "integer" }
+      },
+      "required": ["ok", "revision"],
+      "additionalProperties": false
+    },
+    "Selection": {
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "start_line": { "type": "integer" },
+        "end_line": { "type": "integer" }
+      },
+      "required": ["text"],
+      "additionalProperties": false
+    },
+    "GitInfo": {
+      "type": "object",
+      "properties": {
+        "branch": { "type": "string" },
+        "dirty": { "type": "boolean" },
+        "worktree": { "type": "string" }
+      },
+      "required": ["branch", "dirty"],
+      "additionalProperties": false
+    },
+    "OpenFile": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string" },
+        "line": { "type": "integer" },
+        "readonly": { "type": "boolean" }
+      },
+      "required": ["path"],
+      "additionalProperties": false
+    },
+    "ContextSnapshot": {
+      "type": "object",
+      "description": "Bounded terminal context returned to an agent. Never contains full scrollback.",
+      "properties": {
+        "pane_id": { "type": "string" },
+        "cwd": { "type": "string" },
+        "shell": { "type": "string" },
+        "title": { "type": "string" },
+        "running": { "type": "string" },
+        "selection": { "$ref": "#/$defs/Selection" },
+        "screen_tail": { "type": "string" },
+        "scrollback_tail": { "type": "string" },
+        "git": { "$ref": "#/$defs/GitInfo" },
+        "open_file": { "$ref": "#/$defs/OpenFile" },
+        "agent": { "$ref": "#/$defs/AgentStateInfo" }
+      },
+      "required": ["pane_id"],
+      "additionalProperties": false
+    },
+    "ActionInfo": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "namespace": { "type": "string" }
+      },
+      "required": ["id", "title"],
+      "additionalProperties": false
+    },
+    "ActionInvokeParams": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "args": { "type": "object", "additionalProperties": true },
+        "pane_id": { "type": "string" }
+      },
+      "required": ["id"],
+      "additionalProperties": false
+    }
+  }
+}
