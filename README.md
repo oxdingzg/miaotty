@@ -5,18 +5,20 @@ A fast, native macOS terminal built for the `miao` AI coding agent — and for a
 > `miaotty` = `miao` + `tty`. Open source (MIT), forked from [Ghostty](https://ghostty.org) for the
 > terminal core (Metal renderer, VT, PTY, shell integration), extended with a control/agent layer.
 
+[English](README.md) · [中文](README.zh-CN.md)
+
 ## Status
 
 Scaffold + **working Ghostty fork build**.
 
 - The Ghostty fork **builds on this machine**: `zig build -Doptimize=ReleaseFast
   -Dxcframework-target=native` → `vendor/ghostty/zig-out/miaotty.app` (arm64,
-  ReleaseFast, Metal). See `docs/ADR/0004-xcode26-build.md` for the Xcode 26 /
+  ReleaseFast, Metal). See `docs/ARCHITECTURE.md` §4.1 for the Xcode 26 /
   macOS 26 workarounds and `scripts/bootstrap-ghostty.sh` to reproduce.
-- The **badge spine runs inside the app** (`docs/ADR/0005-app-integration.md`):
+- The **badge spine runs inside the app** (`docs/ARCHITECTURE.md` §4.2):
   `miaotty-cli pane list` returns live panes + child PIDs, and `state set` drives
   an on-pane agent badge (processing / awaiting / error / idle).
-- **Pane identity & env binding** (`docs/ADR/0006-identity-and-env-binding.md`):
+- **Pane identity & env binding** (`docs/ARCHITECTURE.md` §4.3):
   the core generates a pane id and injects `MIAOTTY_PANE_ID` at spawn; the CLI
   defaults `--pane` from it; the app announces `TERM_PROGRAM=miaotty` and
   installs agent hooks under `~/.local/share/miaotty/` on launch.
@@ -35,11 +37,13 @@ miaotty/
 ├── proto/            MTP schema (single source of truth) + codegen
 ├── cli/              Rust workspace: `mtp` crate + `miaotty-cli`
 ├── macos/MiaottyKit/ Swift package: host, registry, extension points
+├── overlay/          additive Ghostty fork glue: tracked patch series + Swift UI
 ├── plugin/           @miao/miaotty (miao integration)
 ├── resources/        shell-integration + agent-integration
 ├── bench/            performance budgets + harness
-└── scripts/          bootstrap, build, doctor, codegen
-docs/                 ADRs (public) and private design docs (gitignored)
+└── tools/            local toolchain (zig; fetched by bootstrap, gitignored)
+scripts/              bootstrap, build, doctor, codegen, e2e
+docs/                 Architecture doc (public); design docs live in docs/private/ (local)
 ```
 
 ## Quick start (spine only)
@@ -69,4 +73,11 @@ miaotty/cli/target/debug/miaotty-cli state list
 3. **Contract first** — implementations (plugin / CLI / in-process) can change; MTP does not.
 4. **Fail open** — terminal never depends on an agent; AI off ⇒ performance equals Ghostty.
 
-See `docs/ADR/` for decisions and `docs/private/` (local only) for the full design set.
+See `docs/ARCHITECTURE.md` for decisions and `docs/private/` (local only) for the full design set.
+
+## License
+
+MIT — see [`LICENSE`](./LICENSE). The terminal core is forked from
+[Ghostty](https://ghostty.org) (MIT). The patched zsh integration is derived
+from [Kitty](https://sw.kovidgoyal.net/kitty/) and remains GPLv3 (see
+`docs/ARCHITECTURE.md` §4.4).

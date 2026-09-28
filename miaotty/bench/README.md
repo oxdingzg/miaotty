@@ -1,6 +1,6 @@
 # Performance
 
-Budgets live in `budgets.json` (mirrors `docs/private/miaotty-performance.md §2`).
+Budgets live in `budgets.json` (see `docs/ARCHITECTURE.md` §3).
 Anything we add must stay off the `input → pty → vt → metal` hot path.
 
 ## Entry points

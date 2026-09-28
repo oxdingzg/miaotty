@@ -233,7 +233,7 @@ index 0d5a4f8..ef1b0cf 100644
  
 +    /// miaotty: returns the PID of the shell process running in this surface,
 +    /// or 0 if it hasn't been spawned yet. Used to bind an agent process to
-+    /// its pane (see the state plane in docs/private/miaotty-integration-arch.md).
++    /// its pane (see the state plane in docs/ARCHITECTURE.md §4.3).
 +    export fn ghostty_surface_child_pid(surface: *Surface) i32 {
 +        return @intCast(surface.core_surface.child_pid.load(.acquire));
 +    }
