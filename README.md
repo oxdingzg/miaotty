@@ -1,5 +1,22 @@
 # miaotty
 
+> [!IMPORTANT]
+> **A personal, temporary tool — not maintained. Use [mtty](https://mtty.dev/mtty) instead.**
+>
+> miaotty was a personal macOS prototype built to try out an agent-aware terminal for
+> [miao](https://mtty.dev/miao). That work continues as **mtty**, a cross-platform terminal
+> (macOS, Linux, Windows) written in Rust:
+>
+> - Website: <https://mtty.dev/mtty> · Docs: <https://mtty.dev/docs/mtty>
+> - Source and releases: [oxdingzg/miao-term](https://github.com/oxdingzg/miao-term)
+>
+> This repository is kept only for reference. It gets no fixes, releases or support, and
+> its build depends on the author's own machine setup. (mtty itself was also called
+> `miaotty` up to v0.0.5; that is the miao-term application, not this repository.)
+>
+> The text below is the prototype's original README.
+
+
 A fast, native macOS terminal built for the `miao` AI coding agent — and for any agent.
 
 > `miaotty` = `miao` + `tty`. Open source (MIT), forked from [Ghostty](https://ghostty.org) for the

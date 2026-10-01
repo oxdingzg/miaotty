@@ -1,5 +1,20 @@
 # miaotty
 
+> [!IMPORTANT]
+> **个人临时工具,不再维护。请改用 [mtty](https://mtty.dev/zh/mtty)。**
+>
+> miaotty 是为 [miao](https://mtty.dev/zh/miao) 试验"懂代理的终端"而做的个人 macOS 原型。这项工作由
+> **mtty** 接续:一个用 Rust 编写的跨平台终端(macOS、Linux、Windows):
+>
+> - 官网:<https://mtty.dev/zh/mtty> · 文档:<https://mtty.dev/zh/docs/mtty>
+> - 源码与版本发布:[oxdingzg/miao-term](https://github.com/oxdingzg/miao-term)
+>
+> 本仓库仅作参考保留:不再修复问题、不再发布版本、不提供支持,其构建也依赖作者本人的机器环境。
+> (mtty 在 v0.0.5 及之前也叫 `miaotty`,那指的是 miao-term 里的应用,不是本仓库。)
+>
+> 以下是该原型原来的 README。
+
+
 为 `miao` AI 编程智能体打造的快速原生 macOS 终端——也适用于任何智能体。
 
 > `miaotty` = `miao` + `tty`。开源（MIT），终端内核（Metal 渲染器、VT、PTY、shell
