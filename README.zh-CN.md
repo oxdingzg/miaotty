@@ -7,10 +7,10 @@
 > **mtty** 接续:一个用 Rust 编写的跨平台终端(macOS、Linux、Windows):
 >
 > - 官网:<https://mtty.dev/zh/mtty> · 文档:<https://mtty.dev/zh/docs/mtty>
-> - 源码与版本发布:[oxdingzg/miao-term](https://github.com/oxdingzg/miao-term)
+> - 源码与版本发布:[oxdingzg/mtty](https://github.com/oxdingzg/mtty)
 >
 > 本仓库仅作参考保留:不再修复问题、不再发布版本、不提供支持,其构建也依赖作者本人的机器环境。
-> (mtty 在 v0.0.5 及之前也叫 `miaotty`,那指的是 miao-term 里的应用,不是本仓库。)
+> (mtty 在 v0.0.5 及之前也叫 `miaotty`,那指的是 mtty 里的应用,不是本仓库。)
 >
 > 以下是该原型原来的 README。
 
