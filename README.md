@@ -8,11 +8,11 @@
 > (macOS, Linux, Windows) written in Rust:
 >
 > - Website: <https://mtty.dev/mtty> · Docs: <https://mtty.dev/docs/mtty>
-> - Source and releases: [oxdingzg/miao-term](https://github.com/oxdingzg/miao-term)
+> - Source and releases: [oxdingzg/mtty](https://github.com/oxdingzg/mtty)
 >
 > This repository is kept only for reference. It gets no fixes, releases or support, and
 > its build depends on the author's own machine setup. (mtty itself was also called
-> `miaotty` up to v0.0.5; that is the miao-term application, not this repository.)
+> `miaotty` up to v0.0.5; that is the mtty application, not this repository.)
 >
 > The text below is the prototype's original README.
 
